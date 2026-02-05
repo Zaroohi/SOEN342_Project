@@ -4,7 +4,9 @@ Team repository for an OO software system.
 
 ## Team
 Team name: 
+
 Team leader: 
+
 Team members: 
 - Zaruhi Grigoryan - 40299515 - Zaroohi
 - Add
