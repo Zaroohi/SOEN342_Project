@@ -9,5 +9,5 @@ Team leader:
 
 Team members: 
 - Zaruhi Grigoryan - 40299515 - Zaroohi
-- Add
+- Jakson Rabinovitch - 40285726 - Jaksonrab
 - Add
