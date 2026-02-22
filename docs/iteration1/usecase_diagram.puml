@@ -1,0 +1,44 @@
+ @startuml
+ 
+left to right direction
+
+actor "User" as User
+rectangle "Personal Task Management" {
+
+  
+  usecase "Create Task" as UC_CreateTask
+  usecase "Update Task" as UC_UpdateTask
+  usecase "Complete Task" as UC_CompleteTask
+  usecase "Cancel Task" as UC_CancelTask
+ usecase "Search Tasks" as UC_SearchTasks
+  usecase "View Tasks" as UC_ViewTasks
+ 
+
+  
+  usecase "Manage Projects" as UC_ManageProjects
+  usecase "Manage Subtasks" as UC_ManageSubtasks
+  usecase "View Task Activity History" as UC_ViewHistory
+
+  
+  usecase "Record Task Activity" as UC_RecordActivity
+}
+
+'associations
+User --> UC_CreateTask
+User --> UC_UpdateTask
+User --> UC_CompleteTask
+User --> UC_CancelTask
+User --> UC_ViewTasks
+User --> UC_SearchTasks
+User --> UC_ManageProjects
+User --> UC_ManageSubtasks
+
+User --> UC_ViewHistory
+
+'include
+UC_CreateTask ..> UC_RecordActivity : <<include>>
+UC_UpdateTask ..> UC_RecordActivity : <<include>>
+UC_CompleteTask ..> UC_RecordActivity : <<include>>
+UC_CancelTask ..> UC_RecordActivity : <<include>>
+
+@enduml
