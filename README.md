@@ -3,7 +3,7 @@ Software Requirements and Deployment (Concordia University, Winter 2026)
 Team repository for an OO software system.
 
 
-Team leader: Zaruhi Grigiryan
+Team leader: Zaruhi Grigoryan
 
 Team members: 
 - Zaruhi Grigoryan - 40299515 - Zaroohi
