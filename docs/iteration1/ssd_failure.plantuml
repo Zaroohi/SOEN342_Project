@@ -1,0 +1,13 @@
+ @startuml
+hide footbox
+title SSD - Create Task (Failure)
+
+actor User
+participant "Personal Task Management System" as System
+User -> System: createTask("", description?, priority, dueDate?, project?, tags?)
+
+System -> System: validate(title, priority)
+
+System -> User: displayError("Title is needed")
+
+@enduml
