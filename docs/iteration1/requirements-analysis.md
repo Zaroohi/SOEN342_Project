@@ -7,7 +7,7 @@ The Personal Task Management is a single-user software app. It helps organizing 
 ## 2. Actors
 User: Individual who uses the system to create, organize, update and monitor tasks.
 
-## 3. Functional Requirements
+<!-- To be continued in the next iterations --!> 
 
 
 
