@@ -1,0 +1,35 @@
+@startuml
+title SSD - Create Task (Success, iteration2) 
+
+actor User
+participant "Personal Task Management System" as System
+hide footbox
+User -> System : createTask(title, description, priority, dueDate, project?, tags?, recurrence?, collaborator?)
+
+System -> System : validateInput
+
+alt valid input
+
+    opt recurrence provided
+        System -> System : generateOccurrences
+    end
+
+    opt collaborator provided
+        System -> System : checkCollaboratorLimit
+        alt limit exceeded
+            System --> User : displayError("Collaborator limit reached")
+        else
+            System -> System : assignCollaborator
+            System -> System : createSubtask
+        end
+    end
+
+    System -> System : recordTaskActivity
+
+    System --> User : taskCreated(taskId)
+
+else invalid input
+    System --> User : displayError("Invalid input")
+end
+
+@enduml
