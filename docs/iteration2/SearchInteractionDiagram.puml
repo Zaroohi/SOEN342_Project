@@ -1,0 +1,25 @@
+@startuml
+title Interaction Diagram (Search Task)
+hide footbox
+actor User
+participant UI
+participant TaskController
+participant TaskService
+participant TaskRepository
+
+
+
+User -> UI : searchTasks(criteria)
+UI -> TaskController : searchTasks(criteria)
+
+TaskController -> TaskService : searchTasks(criteria)
+TaskService -> TaskRepository : getAllTasks()
+
+TaskRepository --> TaskService : taskList
+TaskService -> TaskService : filterTasks(criteria)
+
+TaskService --> TaskController : results
+TaskController --> UI : displayTasks
+UI --> User : showResults
+
+@enduml

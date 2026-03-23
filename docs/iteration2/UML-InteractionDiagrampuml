@@ -1,0 +1,53 @@
+@startuml
+title Interaction Diagram - Create Task (Critical Use Case)
+
+hide footbox
+actor User
+participant UI
+participant TaskController
+participant TaskService
+participant CollaboratorService
+participant TaskRepository
+ 
+
+User -> UI : createTask(title, description, priority, dueDate, project?, tags?, recurrence?, collaborator?)
+
+UI -> TaskController : createTask(...)
+TaskController -> TaskService : validateInput(...)
+
+alt valid input
+
+    opt recurrence provided
+        TaskService -> TaskService : generateOccurrences()
+    end
+
+    opt collaborator provided
+        TaskService -> CollaboratorService : checkCollaboratorLimit()
+
+        alt limit exceeded
+            CollaboratorService --> TaskService : limitExceeded
+            TaskService --> TaskController : error("Collaborator limit reached")
+            TaskController --> UI : displayError(...)
+            UI --> User : displayError(...)
+        else
+            CollaboratorService --> TaskService : ok
+            TaskService -> CollaboratorService : assignCollaborator()
+            TaskService -> TaskService : createSubtask()
+        end
+    end
+
+    TaskService -> TaskService : recordTaskActivity()
+    TaskService -> TaskRepository : saveTask()
+
+    TaskRepository --> TaskService : taskId
+    TaskService --> TaskController : taskCreated(taskId)
+    TaskController --> UI : success
+    UI --> User : taskCreated(taskId)
+
+else invalid input
+    TaskService --> TaskController : error("Invalid input")
+    TaskController --> UI : displayError(...)
+    UI --> User : displayError(...)
+end
+
+@enduml
