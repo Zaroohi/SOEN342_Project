@@ -1,0 +1,25 @@
+@startuml
+title Interaction Diagram (Export Tasks CSV)
+hide footbox
+actor User
+participant UI
+participant TaskController
+participant TaskService
+participant TaskRepository
+participant CSVService
+
+User -> UI : exportCSV()
+UI -> TaskController : exportCSV()
+
+TaskController -> TaskService : getAllTasks()
+TaskService -> TaskRepository : getAllTasks()
+
+TaskRepository --> TaskService : taskList
+TaskService --> TaskController : taskList
+
+TaskController -> CSVService : writeToCSV(taskList)
+CSVService --> TaskController : fileCreated
+
+TaskController --> UI : exportSuccess
+UI --> User : confirmation
+@enduml
