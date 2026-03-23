@@ -1,0 +1,22 @@
+@startuml
+title SSD- Create Task (Failure, iteration2)
+hide footbox
+actor User
+participant "Personal Task Management System" as System
+
+User -> System : createTask(title, description, priority, dueDate, ...)
+
+System -> System : validateInput
+
+alt missing title
+    System --> User : displayError("Title is needed")
+
+else invalid priority
+    System --> User : displayError("Invalid priority")
+
+else collaborator limit exceeded
+    System --> User : displayError("Collaborator limit reached")
+
+end
+
+@enduml

@@ -1,0 +1,181 @@
+# Iteration 1 - Operations and contracts 
+
+##1) System Operations:
+- createTask(title, description?, priority, dueDate?, project?, tags?) -> taskId
+- updateTask(taskId, title?, description?, priority?, dueDate?, project?, tags?) -> void
+- completeTask(taskId) -> void
+- cancelTask(taskId) -> void 
+- viewTasks() -> List<Task> 
+- createSubtask(taskId, title) -> subtaskId
+- completeSubtask(taskId, subtaskId) -> void
+- manageProject() -> void
+- manageSubTask(taskId) -> void
+- searchTask(query) -> List<Task>
+- viewTaskActivity(taskId) -> List<Activity>
+- recordTaskActivity(taskId, description) -> void(internal) 
+- listTasks(type, value) -> List<Task>
+- viewTasksDue(dueDate) -> List<Task>
+- viewTaskRange(startDate, endDate) -> List<Task>
+
+## Task Status:
+A task can have one of the following statues:
+- open
+- cancelled
+- completed
+Open is the default 
+
+Status transitions:
+- open -> completed
+- open -> cancelled
+
+## Task Tag:
+Tasks may be categroized using tags
+Tags are user-defined keywords
+- one task can have multiple tags
+- one tag may be associated with multiple tasks
+
+##2) Operation Contracts
+
+### createTask(title, description?, priority, dueDate?, project?,tags?) -> taskId
+
+Preconditions:
+- title needs to be provided
+- priority needs to be provided
+
+Postconditions: 
+- new task is created
+- title is stored
+- description is stored if provided
+- due date is stored if provided
+- priority is stored
+- if tags are provided then the task is associated with theese tags
+- task can have 0 or more tags
+- creation date is automatically set
+- status is set to open by default
+- a unique taskId is returned
+- if a project is not provided then the task belongs to no project by default
+- recordTaskActivity(taskId, "task created") is exectued
+
+### update(taskId, title?, description?, priority?, dueDate?, project?, tag?)
+
+Postconditions:
+- task already exists
+- if tags provided/updated then the task-tag association should be updated accordingly
+- title needs to be provided and non-empty
+
+Postconditions:
+- only provided attributes are updated
+- recordTaskActivity(taskId, "task updated") is exectued
+
+### cancelTask(taskId)
+
+Preconditions:
+- task already exists
+- status is open
+
+Postconditions:
+- task status change to cancelled
+- recordTaskActivity(taskId, "task cancelled") is executed
+
+### viewTasks()
+
+Preconditions:
+- none
+
+Postconditions:
+- all stored tasks are displayed
+- no data is modified
+
+### searchTask(query)
+
+Preconditions:
+- query needs to be provided and non-empty
+
+Postconditions:
+- matching tasks are returned
+- no data is modified
+
+### createSubtask(taskId, title) -> subtaskId
+
+Preconditions:
+- parent task exists
+- title is provided and non-empty
+
+Postconditions:
+- subtask is created
+- subtask is associatyed with only one parent task
+- subtask cannot exsit independently (composition)
+- subtask status is set to open by default
+- a unique subtask ID is returned
+
+### completeSubtask(taskId, subtaskId) 
+
+Preconditions:
+- parent task exists
+- subtask exists under that task
+- subtask status is open
+
+Postconditions:
+- subtask status becomes completed
+- parent task status is not modified automatically 
+
+### manageProject()
+
+Precondition:
+- none
+
+Postcondition:
+- project information is managed within the system
+
+### viewTaskActivity(taskId)
+
+Preconditions:
+- task already exists
+
+Postconditions:
+- activity history is displayed for the task in question
+- no task data is modified
+
+### recordTaskActivity(taskId, description)
+
+Preconditions:
+- task already exists
+- description is provided
+
+Postconditions:
+- new activity entry is added to task history
+
+### listTasks(type?, value?)
+
+Preconditions:
+- type should be either dueDate, priority, status, project or tag
+
+Postconditions:
+-tasks matching the filtering are displayed
+- no task is modified
+
+### viewTasksDue(dueDate?)
+
+Preconditions:
+- dueDate is provided
+
+Postconditions:
+- tasks with dueDate matching the input are displayed
+- no data is modified
+
+### viewTaskRange(startDate?, endDate?)
+
+Preconditions:
+-startDate and endDate are provided
+- startDate <= endDate
+
+Postconditions:
+- tasks due within the range are displayed
+- no data is modified
+
+
+
+
+
+
+

@@ -1,0 +1,30 @@
+@startuml
+title Interaction Diagram (Import Tasks from CSV)
+hide footbox
+actor User
+participant UI
+participant TaskController
+participant TaskService
+participant CSVService
+participant TaskRepository
+participant ProjectService
+participant CollaboratorService
+
+User -> UI : importCSV(file)
+UI -> TaskController : importCSV(file)
+
+TaskController -> CSVService : readFile(file)
+CSVService --> TaskController : parsedData
+
+loop for each record
+    TaskController -> TaskService : createTaskFromData(data)
+
+    TaskService -> ProjectService : findOrCreateProject()
+    TaskService -> CollaboratorService : findOrCreateCollaborator()
+
+    TaskService -> TaskRepository : saveTask()
+end
+
+TaskController --> UI : importSuccess
+UI --> User : displayConfirmation
+@enduml

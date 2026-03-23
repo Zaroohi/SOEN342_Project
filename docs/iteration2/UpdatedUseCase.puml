@@ -1,0 +1,35 @@
+@startuml
+title Personal Task Management (Iteration2)
+
+actor User
+
+rectangle "Personal Task Management" {
+
+    User --> (Create Task)
+   User --> (Update Task)
+    User --> (Complete Task)
+    User --> (Cancel Task)
+    User --> (Search Tasks)
+    User --> (Manage Projects)
+    User --> (Manage Tags)
+    User --> (Manage Subtasks)
+  User --> (Export Tasks to CSV)
+    User --> (Import Tasks from CSV)
+User --> (View Task Activity History)
+    
+
+    (Create Task) --> (Manage Recurrence) : <<include>>
+    (Create Task) --> (Assign Collaborator) : <<include>>
+
+    (Assign Collaborator) --> (Create Subtask) : <<include>>
+    (Assign Collaborator) --> (Check Collaborator Limit) : <<include>>
+
+    (Search Tasks) --> (View Tasks) : <<include>>
+
+    (Complete Task) --> (Record Task Activity) : <<include>>
+    (Cancel Task) --> (Record Task Activity) : <<include>>
+    (Create Task) --> (Record Task Activity) : <<include>>
+    (Update Task) --> (Record Task Activity) : <<include>>
+
+}
+@enduml
