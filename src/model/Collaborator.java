@@ -1,64 +1,122 @@
 package model;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 public class Collaborator {
 
+    private final Project project;
     private String name;
     private CollaboratorCategory category;
-    private int openTaskCount;
+    private final List<CollaboratorSubtask> openAssignments;
 
-    //constr
-    public Collaborator(String name, CollaboratorCategory category) {
-        this.name = name;
+    public Collaborator(Project project, String name, CollaboratorCategory category) {
+        if (project == null) {
+            throw new IllegalArgumentException("Collaborator must belong to a project.");
+        }
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Collaborator name cannot be empty.");
+        }
+        if (category == null) {
+            throw new IllegalArgumentException("Category is required.");
+        }
+        this.project = project;
+        this.name = name.trim();
         this.category = category;
-        this.openTaskCount = 0;
+        this.openAssignments = new ArrayList<>();
     }
 
-    //getter name
+    public Project getProject() {
+        return this.project;
+    }
+
     public String getName() {
         return this.name;
     }
 
-    //sette name
     public void setName(String name) {
-        this.name = name;
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Collaborator name cannot be empty.");
+        }
+        this.name = name.trim();
     }
 
-    //getter category
     public CollaboratorCategory getCategory() {
         return this.category;
     }
 
-    //setter category
     public void setCategory(CollaboratorCategory category) {
+        if (category == null) {
+            throw new IllegalArgumentException("Category is required.");
+        }
         this.category = category;
     }
 
-    //getter open task count
-    public int getOpenTaskCount() {
-        return this.openTaskCount;
+    public int getOpenTasksLimit() {
+        return this.category.getMaxOpenTasks();
     }
 
-    //increasing count
-    public void incrementOpenTaskCount() {
-        this.openTaskCount++;
+    public int getActiveOpenTasks() {
+        return this.openAssignments.size();
     }
 
-    //decreasing count
-    public void decrementOpenTaskCount() {
-        if (this.openTaskCount > 0) {
-            this.openTaskCount--;
+    public boolean canAcceptTask() {
+        return getActiveOpenTasks() < getOpenTasksLimit();
+    }
+
+    public void trackOpenAssignment(CollaboratorSubtask subtask) {
+        if (subtask != null && !this.openAssignments.contains(subtask)) {
+            this.openAssignments.add(subtask);
         }
     }
 
-    //check if collaborator can take more tasks
-    public boolean canAcceptMoreTasks() {
-        return this.openTaskCount < this.category.getMaxOpenTasks();
+    public void releaseAssignment(CollaboratorSubtask subtask) {
+        this.openAssignments.remove(subtask);
+    }
+
+    public void assignedTask(CollaboratorSubtask subtask) {
+        if (subtask == null) {
+            throw new IllegalArgumentException("Subtask cannot be null.");
+        }
+        if (!canAcceptTask()) {
+            throw new IllegalStateException("Collaborator open task limit reached.");
+        }
+        trackOpenAssignment(subtask);
+    }
+
+    public List<Task> getOpenTasks() {
+        List<Task> parents = new ArrayList<>();
+        for (CollaboratorSubtask sub : this.openAssignments) {
+            Task parent = sub.getParentTask();
+            if (parent != null && !parents.contains(parent)) {
+                parents.add(parent);
+            }
+        }
+        return Collections.unmodifiableList(parents);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Collaborator that = (Collaborator) o;
+        return this.project.equals(that.project) && this.name.equalsIgnoreCase(that.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.project, this.name.toLowerCase());
     }
 
     @Override
     public String toString() {
-        return "Collaborator{name='" + this.name + "', category=" + this.category +
-               ", openTaskCount=" + this.openTaskCount + "}";
+        return "Collaborator{name='" + this.name + "', category=" + this.category
+                + ", activeOpenTasks=" + getActiveOpenTasks() + "/" + getOpenTasksLimit() + "}";
     }
 }

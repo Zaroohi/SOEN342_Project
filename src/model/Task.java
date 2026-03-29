@@ -1,148 +1,242 @@
 package model;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-
 
 public class Task {
 
+    private final int id;
     private String title;
     private String description;
-    private String priority;
-    private Project project;
-    private List<String> tags;
-    private Collaborator collaborator;
-    private String subtask;
-    private String recurrencePattern;
-
-    private LocalDate dueDate;
+    private final LocalDateTime creationDate;
+    private String priorityLevel;
     private TaskStatus status;
-     
-    //constr. 
-    public Task(String title, String description, String priority, LocalDate dueDate) {
-        this.title = title;
-        this.description = description;
-        this.priority = priority;
+    private LocalDate dueDate;
+    private RecurrencePattern recurrencePattern;
+    private Project project;
+    private final List<SubTask> subtasks;
+    private final List<Tag> tags;
+    private final List<ActivityEntry> activityHistory;
+
+    public Task(int id, String title, String description, String priorityLevel, LocalDate dueDate) {
+        if (title == null || title.trim().isEmpty()) {
+            throw new IllegalArgumentException("Task title cannot be empty.");
+        }
+        this.id = id;
+        this.title = title.trim();
+        this.description = description == null ? "" : description;
+        this.priorityLevel = priorityLevel == null ? "" : priorityLevel;
         this.dueDate = dueDate;
         this.status = TaskStatus.OPEN;
+        this.creationDate = LocalDateTime.now();
+        this.recurrencePattern = null;
         this.project = null;
+        this.subtasks = new ArrayList<>();
         this.tags = new ArrayList<>();
-        this.collaborator = null;
-        this.subtask = "";
-        this.recurrencePattern = ""; }
+        this.activityHistory = new ArrayList<>();
+        log(ActionType.CREATED, "Task created");
+    }
 
-    //getter title
+    public int getId() {
+        return this.id;
+    }
+
     public String getTitle() {
         return this.title;
     }
 
-    //setter title
     public void setTitle(String title) {
-        this.title = title; }
+        if (title == null || title.trim().isEmpty()) {
+            throw new IllegalArgumentException("Task title cannot be empty.");
+        }
+        this.title = title.trim();
+        log(ActionType.UPDATED, "Title updated");
+    }
 
-    //getter description
     public String getDescription() {
         return this.description;
     }
 
-    //setter description
     public void setDescription(String description) {
-        this.description = description;
+        this.description = description == null ? "" : description;
+        log(ActionType.UPDATED, "Description updated");
     }
 
-    //getter priority
-    public String getPriority() {
-        return this.priority;
+    public LocalDateTime getCreationDate() {
+        return this.creationDate;
     }
 
-    //setter priority
-    public void setPriority(String priority) {
-        this.priority = priority;
+    public String getPriorityLevel() {
+        return this.priorityLevel;
     }
 
-    //gette due date
-    public LocalDate getDueDate() {
-        return this.dueDate;
+    public void setPriorityLevel(String priorityLevel) {
+        this.priorityLevel = priorityLevel == null ? "" : priorityLevel;
+        log(ActionType.UPDATED, "Priority updated");
     }
 
-    //setter due date
-    public void setDueDate(LocalDate dueDate) {
-        this.dueDate = dueDate;
-    }
-
-    //getter status
     public TaskStatus getStatus() {
         return this.status;
     }
 
-    //setter status
     public void setStatus(TaskStatus status) {
-        this.status = status;
+        if (status != null) {
+            this.status = status;
+            log(ActionType.UPDATED, "Status set to " + status);
+        }
     }
 
-    //getter project
+    public LocalDate getDueDate() {
+        return this.dueDate;
+    }
+
+    public void setDueDate(LocalDate dueDate) {
+        this.dueDate = dueDate;
+        log(ActionType.UPDATED, "Due date updated");
+    }
+
+    public boolean isRecurring() {
+        return this.recurrencePattern != null;
+    }
+
+    public RecurrencePattern getRecurrencePattern() {
+        return this.recurrencePattern;
+    }
+
+    public void setRecurrencePattern(RecurrencePattern recurrencePattern) {
+        this.recurrencePattern = recurrencePattern;
+        log(ActionType.UPDATED, recurrencePattern == null ? "Recurrence cleared" : "Recurrence pattern set");
+    }
+
     public Project getProject() {
         return this.project;
     }
 
-    //setter project
-    public void setProject(Project project) {
+    void setProject(Project project) {
         this.project = project;
     }
 
-    //getter tags
-    public List<String> getTags() {
-        return this.tags;
+    public List<SubTask> getSubtasks() {
+        return Collections.unmodifiableList(this.subtasks);
     }
 
-    //add one tag
-    public void addTag(String tag) {
-        this.tags.add(tag);
+    private void addSubtaskInternal(SubTask subtask) {
+        if (subtask != null && !this.subtasks.contains(subtask)) {
+            this.subtasks.add(subtask);
+            subtask.bindParentTask(this);
+            log(ActionType.SUBTASK_ADDED, "Subtask added: " + subtask.getTitle());
+        }
     }
 
-    //remove one tag
-    public void removeTag(String tag) {
-        this.tags.remove(tag);
+    public void addSubtask(SubTask subtask) {
+        addSubtaskInternal(subtask);
     }
 
-    //getter for collaborator
-    public Collaborator getCollaborator() {
-        return this.collaborator;
+    public void addGeneralSubtask(String title) {
+        addSubtask(new GeneralSubtask(title));
     }
 
-    //setter collaborator
-    public void setCollaborator(Collaborator collaborator) {
-        this.collaborator = collaborator;
+    public List<Tag> getTags() {
+        return Collections.unmodifiableList(this.tags);
     }
 
-    //getter subtask
-    public String getSubtask() {
-        return this.subtask; }
+    public void addTag(Tag tag) {
+        if (tag != null && !this.tags.contains(tag)) {
+            this.tags.add(tag);
+            log(ActionType.TAG_ADDED, "Tag added: " + tag.getKeyword());
+        }
+    }
 
-    //setter subtask
-    public void setSubtask(String subtask) {
-        this.subtask = subtask;
+    public void addTagKeyword(String keyword) {
+        addTag(new Tag(keyword));
     }
-    //getter recurrence pattern
-    public String getRecurrencePattern() {
-        return this.recurrencePattern;
+
+    public void removeTag(Tag tag) {
+        if (this.tags.remove(tag)) {
+            log(ActionType.TAG_REMOVED, "Tag removed: " + tag.getKeyword());
+        }
     }
-    //setter recurrence pattern
-    public void setRecurrencePattern(String recurrencePattern) {
-        this.recurrencePattern = recurrencePattern;
+
+    public List<ActivityEntry> getActivityHistory() {
+        return Collections.unmodifiableList(this.activityHistory);
     }
-    //check if task open
+
+    public String getSubtaskProgress() {
+        if (this.subtasks.isEmpty()) {
+            return "0/0";
+        }
+        int done = 0;
+        for (SubTask s : this.subtasks) {
+            if (s.getStatus() == SubTaskStatus.COMPLETED) {
+                done++;
+            }
+        }
+        return done + "/" + this.subtasks.size();
+    }
+
+    public void complete() {
+        this.status = TaskStatus.COMPLETED;
+        log(ActionType.COMPLETED, "Task completed");
+    }
+
+    public void cancel() {
+        this.status = TaskStatus.CANCELLED;
+        log(ActionType.CANCELLED, "Task cancelled");
+    }
+
+    public void reopen() {
+        if (this.status != TaskStatus.OPEN) {
+            this.status = TaskStatus.OPEN;
+            log(ActionType.UPDATED, "Task reopened");
+        }
+    }
+
     public boolean isOpen() {
         return this.status == TaskStatus.OPEN;
     }
 
+    private void log(ActionType type, String description) {
+        this.activityHistory.add(new ActivityEntry(type, description));
+    }
+
+    public String subtasksSummaryForCsv() {
+        if (this.subtasks.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < this.subtasks.size(); i++) {
+            if (i > 0) {
+                sb.append("; ");
+            }
+            sb.append(this.subtasks.get(i).getTitle());
+        }
+        return sb.toString();
+    }
+
+    public CollaboratorSubtask findCollaboratorSubtaskFor(Collaborator collaborator) {
+        if (collaborator == null) {
+            return null;
+        }
+        for (SubTask s : this.subtasks) {
+            if (s instanceof CollaboratorSubtask) {
+                CollaboratorSubtask cs = (CollaboratorSubtask) s;
+                if (collaborator.equals(cs.getCollaborator())) {
+                    return cs;
+                }
+            }
+        }
+        return null;
+    }
+
     @Override
     public String toString() {
-        return "Task: title='" + this.title + "', description='" + this.description +
-                "', priority='" + this.priority + "', dueDate=" + this.dueDate +
-                ", status=" + this.status + ", project=" + this.project +
-                ", tags=" + this.tags + ", collaborator=" + this.collaborator +
-                ", subtask='" + this.subtask + "', recurrencePattern='" + this.recurrencePattern;
+        return "Task{id=" + this.id + ", title='" + this.title + "', description='" + this.description
+                + "', priority='" + this.priorityLevel + "', dueDate=" + this.dueDate
+                + ", status=" + this.status + ", project=" + this.project
+                + ", recurring=" + isRecurring() + ", subtasks=" + getSubtaskProgress()
+                + ", tags=" + this.tags + "}";
     }
 }
