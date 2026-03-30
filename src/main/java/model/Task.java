@@ -21,21 +21,30 @@ public class Task {
     private final List<Tag> tags;
     private final List<ActivityEntry> activityHistory;
 
+//---------------------------------CONSTRUCTORS---------------------------------
+
+    //creates a new task, sets status to OPEN and log a CREATED entry (when created from the menu)
     public Task(int id, String title, String description, String priorityLevel, LocalDate dueDate) {
-        this(id, title, description, priorityLevel, dueDate, TaskStatus.OPEN, LocalDateTime.now(), false);
+        requireNonEmptyTitle(title);
+        this.id = id;
+        this.title = title.trim();
+        this.description = description == null ? "" : description;
+        this.priorityLevel = priorityLevel == null ? "" : priorityLevel;
+        this.dueDate = dueDate;
+        this.status = TaskStatus.OPEN;
+        this.creationDate = LocalDateTime.now();
+        this.recurrencePattern = null;
+        this.project = null;
+        this.subtasks = new ArrayList<>();
+        this.tags = new ArrayList<>();
+        this.activityHistory = new ArrayList<>();
+        log(ActionType.CREATED, "Task created");
     }
 
-    /** Rebuilds a task from SQLite without logging a synthetic CREATED entry. */
-    public static Task restore(int id, String title, String description, String priorityLevel,
-            LocalDate dueDate, TaskStatus status, LocalDateTime creationDate) {
-        return new Task(id, title, description, priorityLevel, dueDate, status, creationDate, true);
-    }
-
-    private Task(int id, String title, String description, String priorityLevel, LocalDate dueDate,
-            TaskStatus status, LocalDateTime creationDate, boolean silentLoad) {
-        if (title == null || title.trim().isEmpty()) {
-            throw new IllegalArgumentException("Task title cannot be empty.");
-        }
+    //loads a task from the database, uses saved status and creation time
+    public Task(int id, String title, String description, String priorityLevel, LocalDate dueDate,
+            TaskStatus status, LocalDateTime creationDate) {
+        requireNonEmptyTitle(title);
         this.id = id;
         this.title = title.trim();
         this.description = description == null ? "" : description;
@@ -48,12 +57,18 @@ public class Task {
         this.subtasks = new ArrayList<>();
         this.tags = new ArrayList<>();
         this.activityHistory = new ArrayList<>();
-        if (!silentLoad) {
-            log(ActionType.CREATED, "Task created");
+    }
+
+    //helper method to check if the title is not empty
+    private static void requireNonEmptyTitle(String title) {
+        if (title == null || title.trim().isEmpty()) {
+            throw new IllegalArgumentException("Task title cannot be empty.");
         }
     }
 
-    /** Used when loading from SQLite; does not write to the activity log. */
+//---------------------------------LOADING FROM DATABASE---------------------------------
+
+    //from the database, adds a subtask to the task and ignores the activity log
     public void attachLoadedSubtask(SubTask subtask) {
         if (subtask != null && !this.subtasks.contains(subtask)) {
             this.subtasks.add(subtask);
@@ -61,7 +76,7 @@ public class Task {
         }
     }
 
-    /** Used when loading from SQLite; does not write to the activity log. */
+    //from the database, adds a tag to the task and ignores the activity log
     public void attachLoadedTagKeyword(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return;
@@ -71,6 +86,8 @@ public class Task {
             this.tags.add(tag);
         }
     }
+
+//---------------------------------GETTERS AND SETTERS---------------------------------
 
     public int getId() {
         return this.id;
@@ -155,6 +172,9 @@ public class Task {
         return Collections.unmodifiableList(this.subtasks);
     }
 
+//---------------------------------SUBTASK MANAGEMENT---------------------------------
+
+    //helper method to add a subtask to the task and log the action
     private void addSubtaskInternal(SubTask subtask) {
         if (subtask != null && !this.subtasks.contains(subtask)) {
             this.subtasks.add(subtask);
@@ -162,7 +182,7 @@ public class Task {
             log(ActionType.SUBTASK_ADDED, "Subtask added: " + subtask.getTitle());
         }
     }
-
+    //adds a subtask to the task and logs the action
     public void addSubtask(SubTask subtask) {
         addSubtaskInternal(subtask);
     }
@@ -170,6 +190,8 @@ public class Task {
     public void addGeneralSubtask(String title) {
         addSubtask(new GeneralSubtask(title));
     }
+
+//---------------------------------TAG MANAGEMENT---------------------------------
 
     public List<Tag> getTags() {
         return Collections.unmodifiableList(this.tags);
@@ -191,6 +213,8 @@ public class Task {
             log(ActionType.TAG_REMOVED, "Tag removed: " + tag.getKeyword());
         }
     }
+
+//---------------------------------ACTIVITY HISTORY---------------------------------
 
     public List<ActivityEntry> getActivityHistory() {
         return Collections.unmodifiableList(this.activityHistory);
@@ -233,6 +257,7 @@ public class Task {
     private void log(ActionType type, String description) {
         this.activityHistory.add(new ActivityEntry(type, description));
     }
+//---------------------------------UTILITY METHODS---------------------------------
 
     public String subtasksSummaryForCsv() {
         if (this.subtasks.isEmpty()) {
@@ -265,10 +290,10 @@ public class Task {
 
     @Override
     public String toString() {
-        return "Task{id=" + this.id + ", title='" + this.title + "', description='" + this.description
+        return "Task:id=" + this.id + ", title='" + this.title + "', description='" + this.description
                 + "', priority='" + this.priorityLevel + "', dueDate=" + this.dueDate
                 + ", status=" + this.status + ", project=" + this.project
                 + ", recurring=" + isRecurring() + ", subtasks=" + getSubtaskProgress()
-                + ", tags=" + this.tags + "}";
+                + ", tags=" + this.tags ;
     }
 }

@@ -1,6 +1,7 @@
 package model;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -12,6 +13,8 @@ public class Collaborator {
     private CollaboratorCategory category;
     private final List<CollaboratorSubtask> openAssignments;
 
+//---------------------------------CONSTRUCTORS---------------------------------
+
     public Collaborator(Project project, String name, CollaboratorCategory category) {
         if (project == null) {
             throw new IllegalArgumentException("Collaborator must belong to a project.");
@@ -19,14 +22,22 @@ public class Collaborator {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Collaborator name cannot be empty.");
         }
-        if (category == null) {
-            throw new IllegalArgumentException("Category is required.");
-        }
         this.project = project;
         this.name = name.trim();
-        this.category = category;
+        this.category = requireCollaboratorCategory(category);
         this.openAssignments = new ArrayList<>();
     }
+
+    //helper method to check if the category is not null and is a valid category from the enum
+    private static CollaboratorCategory requireCollaboratorCategory(CollaboratorCategory category) {
+        if (category == null) {
+            throw new IllegalArgumentException(
+                    "Category must be a CollaboratorCategory: " + Arrays.toString(CollaboratorCategory.values()));
+        }
+        return category;
+    }
+
+//---------------------------------GETTERS AND SETTERS---------------------------------
 
     public Project getProject() {
         return this.project;
@@ -48,10 +59,7 @@ public class Collaborator {
     }
 
     public void setCategory(CollaboratorCategory category) {
-        if (category == null) {
-            throw new IllegalArgumentException("Category is required.");
-        }
-        this.category = category;
+        this.category = requireCollaboratorCategory(category);
     }
 
     public int getOpenTasksLimit() {
@@ -76,6 +84,7 @@ public class Collaborator {
         this.openAssignments.remove(subtask);
     }
 
+    //assigns a subtask to the collaborator and logs the action
     public void assignedTask(CollaboratorSubtask subtask) {
         if (subtask == null) {
             throw new IllegalArgumentException("Subtask cannot be null.");
@@ -97,6 +106,8 @@ public class Collaborator {
         return Collections.unmodifiableList(parents);
     }
 
+//---------------------------------UTILITY METHODS---------------------------------
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -116,7 +127,7 @@ public class Collaborator {
 
     @Override
     public String toString() {
-        return "Collaborator{name='" + this.name + "', category=" + this.category
-                + ", activeOpenTasks=" + getActiveOpenTasks() + "/" + getOpenTasksLimit() + "}";
+        return "Collaborator: name='" + this.name + "', category=" + this.category
+                + ", activeOpenTasks=" + getActiveOpenTasks() + "/" + getOpenTasksLimit();
     }
 }

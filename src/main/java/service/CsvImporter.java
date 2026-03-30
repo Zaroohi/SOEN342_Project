@@ -11,18 +11,33 @@ import model.CollaboratorCategory;
 import model.Project;
 import model.Task;
 
+//reads CSV; Tasks defers one DB write until the file is done
 public class CsvImporter {
 
     private final Tasks tasks;
     private final Projects projects;
+    private final Collaborators collaborators;
 
-    public CsvImporter(Tasks tasks, Projects projects) {
+//---------------------------------CONSTRUCTORS---------------------------------
+
+    public CsvImporter(Tasks tasks, Projects projects, Collaborators collaborators) {
         this.tasks = tasks;
         this.projects = projects;
+        this.collaborators = collaborators;
     }
 
+//---------------------------------IMPORT---------------------------------
+
     public void importFromCsv(String filePath) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(filePath));
+        this.tasks.beginDefer();
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            importFromOpenReader(reader);
+        } finally {
+            this.tasks.endDefer();
+        }
+    }
+
+    private void importFromOpenReader(BufferedReader reader) throws IOException {
         String line;
         boolean first = true;
         while ((line = reader.readLine()) != null) {
@@ -70,12 +85,8 @@ public class CsvImporter {
 
             Collaborator collaborator = null;
             if (project != null && !collaboratorName.isEmpty() && !collaboratorCategoryText.isEmpty()) {
-                collaborator = project.findCollaboratorByName(collaboratorName);
-                if (collaborator == null) {
-                    CollaboratorCategory cat = CollaboratorCategory.valueOf(collaboratorCategoryText.toUpperCase());
-                    collaborator = new Collaborator(project, collaboratorName, cat);
-                    project.addCollaborator(collaborator);
-                }
+                CollaboratorCategory cat = CollaboratorCategory.valueOf(collaboratorCategoryText.toUpperCase());
+                collaborator = this.collaborators.getOrCreate(project, collaboratorName, cat);
             }
 
             List<String> tags = new ArrayList<>();
@@ -96,6 +107,5 @@ public class CsvImporter {
                 }
             }
         }
-        reader.close();
     }
 }

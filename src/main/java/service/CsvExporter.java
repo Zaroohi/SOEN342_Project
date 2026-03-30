@@ -9,6 +9,7 @@ import model.Project;
 import model.SubTask;
 import model.Task;
 
+//writes current in-memory tasks to a CSV file only — does not read or write SQLite (DB is unchanged by export)
 public class CsvExporter {
 
     public static final String HEADER =
@@ -16,9 +17,13 @@ public class CsvExporter {
 
     private final Tasks tasks;
 
+//---------------------------------CONSTRUCTORS---------------------------------
+
     public CsvExporter(Tasks tasks) {
         this.tasks = tasks;
     }
+
+//---------------------------------EXPORT---------------------------------
 
     public void exportToCsv(String filePath) throws IOException {
         PrintWriter writer = new PrintWriter(new FileWriter(filePath));
@@ -50,6 +55,8 @@ public class CsvExporter {
         }
         writer.close();
     }
+
+//---------------------------------HELPERS---------------------------------
 
     private static CollaboratorSubtask firstCollaboratorSubtask(Task t) {
         for (SubTask s : t.getSubtasks()) {

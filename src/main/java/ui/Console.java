@@ -11,20 +11,25 @@ import database.TaskDAO;
 import model.SearchCriteria;
 import model.Task;
 import model.TaskStatus;
+import service.Collaborators;
 import service.CsvExporter;
 import service.CsvImporter;
 import service.Projects;
 import service.Tasks;
 import util.DateUtil;
 
+//CLI menu; Tasks saves to SQLite after changes; exit/shutdown calls saveToDisk()
 public class Console {
 
     private final Scanner scanner;
     private final DatabaseConnection databaseConnection;
     private final Projects projects;
+    private final Collaborators collaborators;
     private final Tasks tasks;
     private final CsvImporter csvImporter;
     private final CsvExporter csvExporter;
+
+//---------------------------------CONSTRUCTORS---------------------------------
 
     public Console() {
         this(new DatabaseConnection());
@@ -34,32 +39,37 @@ public class Console {
         this.scanner = new Scanner(System.in);
         this.databaseConnection = databaseConnection;
         this.projects = new Projects();
-        this.tasks = new Tasks(this.projects);
+        this.collaborators = new Collaborators(this.projects);
+        this.tasks = new Tasks(this.projects, this.collaborators, this.databaseConnection);
         try (Connection c = this.databaseConnection.getConnection()) {
             new TaskDAO(c).loadAll(this.projects, this.tasks);
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             System.err.println("Could not load database: " + e.getMessage());
         }
-        this.csvImporter = new CsvImporter(this.tasks, this.projects);
+        this.csvImporter = new CsvImporter(this.tasks, this.projects, this.collaborators);
         this.csvExporter = new CsvExporter(this.tasks);
         Runtime.getRuntime().addShutdownHook(new Thread(this::persistQuietly));
     }
 
+//---------------------------------PERSIST TO SQLITE---------------------------------
+
     private void persistQuietly() {
-        try (Connection c = this.databaseConnection.getConnection()) {
-            new TaskDAO(c).saveAll(this.projects, this.tasks);
+        try {
+            this.tasks.saveToDisk();
         } catch (Exception ignored) {
-            // best effort
+            // best effort on shutdown
         }
     }
 
     private void persist() throws IOException {
-        try (Connection c = this.databaseConnection.getConnection()) {
-            new TaskDAO(c).saveAll(this.projects, this.tasks);
-        } catch (SQLException e) {
+        try {
+            this.tasks.saveToDisk();
+        } catch (RuntimeException e) {
             throw new IOException(e.getMessage(), e);
         }
     }
+
+//---------------------------------MENU LOOP---------------------------------
 
     public void display(String message) {
         System.out.println(message);
@@ -111,15 +121,18 @@ public class Console {
         display("--------------------------------------------------- ");
     }
 
+//---------------------------------MENU ACTIONS---------------------------------
+
     private void importTasks() {
         System.out.print("Enter CSV file path to import: ");
         String filePath = this.scanner.nextLine();
         try {
             this.csvImporter.importFromCsv(filePath);
-            persist();
             display("Tasks imported successfully.");
         } catch (IOException e) {
             display("Error importing file: " + e.getMessage());
+        } catch (RuntimeException e) {
+            display("Import failed: " + e.getMessage());
         } catch (Exception e) {
             display("Import failed: " + e.getMessage());
         }

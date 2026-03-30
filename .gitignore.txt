@@ -1,8 +1,0 @@
-bin/
-*.class
-.metadata/
-.settings/
-target/
-lib/sqlite-jdbc.jar
-data/*.db
-data/*.db-journal

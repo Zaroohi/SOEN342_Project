@@ -5,13 +5,18 @@ import java.util.Collections;
 import java.util.List;
 import model.Project;
 
+//all projects in memory — SQLite is updated when Tasks saves
 public class Projects {
 
     private final List<Project> projects;
 
+//---------------------------------CONSTRUCTORS---------------------------------
+
     public Projects() {
         this.projects = new ArrayList<>();
     }
+
+//---------------------------------LOOKUP---------------------------------
 
     public Project findByName(String name) {
         if (name == null || name.trim().isEmpty()) {
@@ -38,6 +43,8 @@ public class Projects {
         }
         return out;
     }
+
+//---------------------------------MUTATIONS---------------------------------
 
     public void save(Project project) {
         if (project == null) {
@@ -66,6 +73,8 @@ public class Projects {
     public List<Project> getAllProjects() {
         return Collections.unmodifiableList(this.projects);
     }
+
+//---------------------------------LOAD FROM DATABASE---------------------------------
 
     public void replaceState(List<Project> loaded) {
         this.projects.clear();

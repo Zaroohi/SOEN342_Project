@@ -12,6 +12,8 @@ public class Project {
     private final List<Task> tasks;
     private final List<Collaborator> collaborators;
 
+//---------------------------------CONSTRUCTORS---------------------------------
+
     public Project(String name, String description) {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Project name cannot be empty.");
@@ -22,6 +24,8 @@ public class Project {
         this.collaborators = new ArrayList<>();
     }
 
+//---------------------------------GETTERS AND SETTERS---------------------------------
+
     public String getName() {
         return this.name;
     }
@@ -29,6 +33,8 @@ public class Project {
     public String getDescription() {
         return this.description;
     }
+    
+//---------------------------------TASK MANAGEMENT---------------------------------
 
     public List<Task> getTasks() {
         return Collections.unmodifiableList(this.tasks);
@@ -62,6 +68,8 @@ public class Project {
         }
     }
 
+//---------------------------------COLLABORATOR MANAGEMENT---------------------------------
+
     public List<Collaborator> getCollaborators() {
         return Collections.unmodifiableList(this.collaborators);
     }
@@ -94,6 +102,8 @@ public class Project {
         this.collaborators.remove(collaborator);
     }
 
+//---------------------------------UTILITY METHODS---------------------------------
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -113,6 +123,6 @@ public class Project {
 
     @Override
     public String toString() {
-        return "Project{name='" + this.name + "', description='" + this.description + "'}";
+        return "Project: name='" + this.name + "', description='" + this.description;
     }
 }

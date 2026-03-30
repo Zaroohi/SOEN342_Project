@@ -26,21 +26,22 @@ import model.TaskStatus;
 import service.Projects;
 import service.Tasks;
 
-/**
- * Data access for tasks, subtasks, and tags. Coordinates full snapshot load/save with {@link ProjectDAO}
- * and {@link CollaboratorDAO}.
- */
+//loads/saves tasks, subtasks, tags and delegates project + collaborator tables to ProjectDAO and CollaboratorDAO
 public final class TaskDAO {
 
     private final Connection conn;
     private final ProjectDAO projectDao;
     private final CollaboratorDAO collaboratorDao;
 
+//---------------------------------CONSTRUCTORS---------------------------------
+
     public TaskDAO(Connection conn) {
         this.conn = conn;
         this.projectDao = new ProjectDAO(conn);
         this.collaboratorDao = new CollaboratorDAO(conn);
     }
+
+//---------------------------------DELETE TASK TABLES ONLY---------------------------------
 
     public void deleteTaskData() throws SQLException {
         try (Statement st = this.conn.createStatement()) {
@@ -49,6 +50,8 @@ public final class TaskDAO {
             st.executeUpdate("DELETE FROM task");
         }
     }
+
+//---------------------------------LOAD ALL INTO MEMORY---------------------------------
 
     public void loadAll(Projects projects, Tasks tasks) throws IOException {
         try {
@@ -71,7 +74,7 @@ public final class TaskDAO {
                     LocalDate due = dueStr == null || dueStr.isEmpty() ? null : LocalDate.parse(dueStr);
                     TaskStatus status = TaskStatus.valueOf(rs.getString("status"));
                     LocalDateTime created = LocalDateTime.parse(rs.getString("creation_time"));
-                    Task t = Task.restore(id, rs.getString("title"), rs.getString("description"),
+                    Task t = new Task(id, rs.getString("title"), rs.getString("description"),
                             rs.getString("priority"), due, status, created);
                     String pname = rs.getString("project_name");
                     if (pname != null && !pname.isEmpty()) {
@@ -133,6 +136,8 @@ public final class TaskDAO {
             throw new IOException("Failed to load database", e);
         }
     }
+
+//---------------------------------SAVE FULL SNAPSHOT (live replace of DB contents)---------------------------------
 
     public void saveAll(Projects projects, Tasks tasks) throws IOException {
         try {

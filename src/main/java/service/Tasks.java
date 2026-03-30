@@ -1,11 +1,16 @@
 package service;
 
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import database.DatabaseConnection;
+import database.TaskDAO;
 import model.Collaborator;
 import model.CollaboratorSubtask;
 import model.Project;
@@ -16,17 +21,67 @@ import model.SubTaskStatus;
 import model.Task;
 import model.TaskStatus;
 
+//in-memory tasks + rules; copies everything to SQLite after each change (see beginDefer/endDefer for multi-step only)
 public class Tasks {
 
     private final List<Task> tasks;
     private final Projects projects;
+    private final Collaborators collaborators;
+    private final DatabaseConnection databaseConnection;
+    private int deferSaveDepth;
     private int nextId;
 
-    public Tasks(Projects projects) {
+//---------------------------------CONSTRUCTORS---------------------------------
+
+    public Tasks(Projects projects, Collaborators collaborators, DatabaseConnection databaseConnection) {
         this.tasks = new ArrayList<>();
         this.projects = projects;
+        this.collaborators = collaborators;
+        this.databaseConnection = databaseConnection;
+        this.deferSaveDepth = 0;
         this.nextId = 1;
     }
+
+//---------------------------------DATABASE (one method + optional defer)---------------------------------
+
+    //writes memory to SQLite (projects, collaborators, tasks, subtasks, tags)
+    private void writeToDatabase() {
+        try (Connection c = this.databaseConnection.getConnection()) {
+            new TaskDAO(c).saveAll(this.projects, this);
+        } catch (IOException | SQLException e) {
+            throw new RuntimeException("Could not save to database: " + e.getMessage(), e);
+        }
+    }
+
+    //call after mutating unless inside beginDefer/endDefer
+    private void saveAfterChange() {
+        if (this.deferSaveDepth == 0) {
+            writeToDatabase();
+        }
+    }
+
+    //same package: CSV import defers until the whole file is parsed
+    void beginDefer() {
+        this.deferSaveDepth++;
+    }
+
+    void endDefer() {
+        this.deferSaveDepth--;
+        if (this.deferSaveDepth < 0) {
+            this.deferSaveDepth = 0;
+        }
+        if (this.deferSaveDepth == 0) {
+            writeToDatabase();
+        }
+    }
+
+    //exit menu / shutdown: always save even if someone forgot to balance defer
+    public void saveToDisk() {
+        this.deferSaveDepth = 0;
+        writeToDatabase();
+    }
+
+//---------------------------------LOOKUP---------------------------------
 
     public Task findById(int id) {
         for (Task t : this.tasks) {
@@ -36,6 +91,8 @@ public class Tasks {
         }
         return null;
     }
+
+//---------------------------------TASK MUTATIONS---------------------------------
 
     public void save(Task task) {
         if (task == null) {
@@ -51,6 +108,7 @@ public class Tasks {
                 p.addTask(task);
             }
         }
+        saveAfterChange();
     }
 
     public void deleteId(int id) {
@@ -64,7 +122,10 @@ public class Tasks {
             p.removeTask(task);
         }
         this.tasks.remove(task);
+        saveAfterChange();
     }
+
+//---------------------------------QUERIES (read-only, no DB write)---------------------------------
 
     public List<Task> getAllTasks() {
         return new ArrayList<>(this.tasks);
@@ -129,6 +190,8 @@ public class Tasks {
         return matches;
     }
 
+//---------------------------------CREATE TASKS---------------------------------
+
     public List<Task> createTaskSeries(String title, String description, String priorityLevel,
             LocalDate singleDueDate, Project project, List<String> tagKeywords,
             Collaborator collaborator, String collaboratorSubtaskTitle, String extraGeneralSubtaskTitle,
@@ -139,16 +202,21 @@ public class Tasks {
             if (dates.isEmpty()) {
                 throw new IllegalArgumentException("Recurrence pattern produced no occurrences.");
             }
-            List<Task> created = new ArrayList<>();
-            for (int i = 0; i < dates.size(); i++) {
-                LocalDate due = dates.get(i);
-                Collaborator c = (i == 0) ? collaborator : null;
-                String collabTitle = (i == 0) ? collaboratorSubtaskTitle : null;
-                String generalExtra = (i == 0) ? extraGeneralSubtaskTitle : null;
-                created.add(createSingleTask(title, description, priorityLevel, due, project, tagKeywords,
-                        c, collabTitle, generalExtra, null));
+            this.beginDefer();
+            try {
+                List<Task> created = new ArrayList<>();
+                for (int i = 0; i < dates.size(); i++) {
+                    LocalDate due = dates.get(i);
+                    Collaborator c = (i == 0) ? collaborator : null;
+                    String collabTitle = (i == 0) ? collaboratorSubtaskTitle : null;
+                    String generalExtra = (i == 0) ? extraGeneralSubtaskTitle : null;
+                    created.add(createSingleTask(title, description, priorityLevel, due, project, tagKeywords,
+                            c, collabTitle, generalExtra, null));
+                }
+                return created;
+            } finally {
+                this.endDefer();
             }
-            return created;
         }
         return Collections.singletonList(createSingleTask(title, description, priorityLevel, singleDueDate,
                 project, tagKeywords, collaborator, collaboratorSubtaskTitle, extraGeneralSubtaskTitle, null));
@@ -164,14 +232,7 @@ public class Tasks {
         }
         assertTitleDueDateUnique(title, dueDate);
 
-        if (collaborator != null) {
-            if (project == null || collaborator.getProject() != project) {
-                throw new IllegalArgumentException("Collaborator must belong to the task's project.");
-            }
-            if (!collaborator.canAcceptTask()) {
-                throw new IllegalArgumentException("Collaborator limit is reached.");
-            }
-        }
+        this.collaborators.validateForOpenAssignment(collaborator, project);
 
         Task task = new Task(this.nextId++, title, description, priorityLevel, dueDate);
         if (attachPattern != null) {
@@ -205,6 +266,7 @@ public class Tasks {
         }
 
         this.tasks.add(task);
+        saveAfterChange();
         return task;
     }
 
@@ -217,15 +279,22 @@ public class Tasks {
         }
     }
 
+//---------------------------------TASK STATUS---------------------------------
+
     public void completeTask(Task task) {
         if (task == null) {
             throw new IllegalArgumentException("Task can't be null.");
         }
-        task.complete();
-        for (SubTask s : new ArrayList<>(task.getSubtasks())) {
-            if (s instanceof CollaboratorSubtask && s.isOpen()) {
-                completeSubtask(s);
+        this.beginDefer();
+        try {
+            task.complete();
+            for (SubTask s : new ArrayList<>(task.getSubtasks())) {
+                if (s instanceof CollaboratorSubtask && s.isOpen()) {
+                    applySubtaskComplete(s);
+                }
             }
+        } finally {
+            this.endDefer();
         }
     }
 
@@ -233,11 +302,16 @@ public class Tasks {
         if (task == null) {
             throw new IllegalArgumentException("Task can't be null.");
         }
-        task.cancel();
-        for (SubTask s : new ArrayList<>(task.getSubtasks())) {
-            if (s instanceof CollaboratorSubtask && s.isOpen()) {
-                cancelSubtask(s);
+        this.beginDefer();
+        try {
+            task.cancel();
+            for (SubTask s : new ArrayList<>(task.getSubtasks())) {
+                if (s instanceof CollaboratorSubtask && s.isOpen()) {
+                    applySubtaskCancel(s);
+                }
             }
+        } finally {
+            this.endDefer();
         }
     }
 
@@ -246,22 +320,35 @@ public class Tasks {
             throw new IllegalArgumentException("Task can't be null.");
         }
         task.reopen();
+        saveAfterChange();
     }
+
+//---------------------------------SUBTASK STATUS---------------------------------
 
     public void completeSubtask(SubTask subtask) {
         if (subtask == null) {
             throw new IllegalArgumentException("Subtask can't be null.");
         }
-        subtask.complete();
-        if (subtask instanceof CollaboratorSubtask) {
-            ((CollaboratorSubtask) subtask).getCollaborator().releaseAssignment((CollaboratorSubtask) subtask);
-        }
+        applySubtaskComplete(subtask);
+        saveAfterChange();
     }
 
     public void cancelSubtask(SubTask subtask) {
         if (subtask == null) {
             throw new IllegalArgumentException("Subtask can't be null.");
         }
+        applySubtaskCancel(subtask);
+        saveAfterChange();
+    }
+
+    private static void applySubtaskComplete(SubTask subtask) {
+        subtask.complete();
+        if (subtask instanceof CollaboratorSubtask) {
+            ((CollaboratorSubtask) subtask).getCollaborator().releaseAssignment((CollaboratorSubtask) subtask);
+        }
+    }
+
+    private static void applySubtaskCancel(SubTask subtask) {
         subtask.cancel();
         if (subtask instanceof CollaboratorSubtask) {
             ((CollaboratorSubtask) subtask).getCollaborator().releaseAssignment((CollaboratorSubtask) subtask);
@@ -280,6 +367,7 @@ public class Tasks {
             cs.getCollaborator().assignedTask(cs);
         }
         subtask.reopen();
+        saveAfterChange();
     }
 
     private void releaseCollaboratorAssignments(Task task) {
@@ -289,6 +377,8 @@ public class Tasks {
             }
         }
     }
+
+//---------------------------------LOAD FROM DATABASE (no SQLite write here)---------------------------------
 
     public void replaceState(List<Task> loaded, int nextIdValue) {
         this.tasks.clear();

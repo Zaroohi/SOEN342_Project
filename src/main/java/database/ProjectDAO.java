@@ -10,13 +10,18 @@ import java.util.List;
 import model.Project;
 import service.Projects;
 
+//SQL for the project table (names + descriptions)
 public final class ProjectDAO {
 
     private final Connection conn;
 
+//---------------------------------CONSTRUCTORS---------------------------------
+
     public ProjectDAO(Connection conn) {
         this.conn = conn;
     }
+
+//---------------------------------WRITE---------------------------------
 
     public void deleteAll() throws SQLException {
         try (Statement st = this.conn.createStatement()) {
@@ -35,6 +40,8 @@ public final class ProjectDAO {
         }
     }
 
+//---------------------------------READ---------------------------------
+
     public List<Project> loadAllProjects() throws SQLException {
         List<Project> list = new ArrayList<>();
         try (Statement st = this.conn.createStatement();
@@ -46,7 +53,7 @@ public final class ProjectDAO {
         return list;
     }
 
-    /** Loads projects into the given {@link Projects} registry (replaces current list). */
+    //replaces the in-memory Projects registry from the project table
     public void loadInto(Projects projects) throws SQLException {
         projects.replaceState(loadAllProjects());
     }

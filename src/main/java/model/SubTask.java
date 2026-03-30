@@ -6,6 +6,9 @@ public abstract class SubTask {
     private SubTaskStatus status;
     private Task parentTask;
 
+//---------------------------------CONSTRUCTORS---------------------------------
+
+    //creates a new subtask, sets the title and status to OPEN
     protected SubTask(String title) {
         if (title == null || title.trim().isEmpty()) {
             throw new IllegalArgumentException("Subtask title cannot be empty.");
@@ -13,6 +16,8 @@ public abstract class SubTask {
         this.title = title.trim();
         this.status = SubTaskStatus.OPEN;
     }
+
+//---------------------------------GETTERS AND SETTERS---------------------------------
 
     public String getTitle() {
         return this.title;
@@ -61,6 +66,6 @@ public abstract class SubTask {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{title='" + this.title + "', status=" + this.status + "}";
+        return getClass().getSimpleName() + ": title='" + this.title + "', status=" + this.status;
     }
 }

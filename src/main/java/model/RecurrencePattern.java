@@ -3,6 +3,7 @@ package model;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -17,10 +18,12 @@ public class RecurrencePattern {
     private Set<DayOfWeek> weekDays;
     private int dayOfMonth;
 
+//---------------------------------CONSTRUCTORS---------------------------------
+
     public RecurrencePattern(RecurrenceFrequency frequency, int interval,
             LocalDate startDate, LocalDate endDate) {
-        if (frequency == null || startDate == null || endDate == null) {
-            throw new IllegalArgumentException("Frequency and date bounds are required.");
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("Start and end date are required.");
         }
         if (endDate.isBefore(startDate)) {
             throw new IllegalArgumentException("End date cannot be before start date.");
@@ -28,7 +31,7 @@ public class RecurrencePattern {
         if (interval < 1) {
             throw new IllegalArgumentException("Interval must be at least 1.");
         }
-        this.frequency = frequency;
+        this.frequency = requireRecurrenceFrequency(frequency);
         this.interval = interval;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -36,12 +39,23 @@ public class RecurrencePattern {
         this.dayOfMonth = startDate.getDayOfMonth();
     }
 
+    //helper method to check if the frequency is not null and is a valid frequency from the enum
+    private static RecurrenceFrequency requireRecurrenceFrequency(RecurrenceFrequency frequency) {
+        if (frequency == null) {
+            throw new IllegalArgumentException(
+                    "Frequency must be a RecurrenceFrequency: " + Arrays.toString(RecurrenceFrequency.values()));
+        }
+        return frequency;
+    }
+
+//---------------------------------GETTERS AND SETTERS---------------------------------
+
     public RecurrenceFrequency getFrequency() {
         return this.frequency;
     }
 
     public void setFrequency(RecurrenceFrequency frequency) {
-        this.frequency = frequency;
+        this.frequency = requireRecurrenceFrequency(frequency);
     }
 
     public int getInterval() {
@@ -90,10 +104,16 @@ public class RecurrencePattern {
         this.dayOfMonth = dayOfMonth;
     }
 
+//---------------------------------UTILITY METHODS---------------------------------
+
+    //generates the occurrences of the recurrence pattern
     public List<LocalDate> generateOccurrences() {
         List<LocalDate> dates = new ArrayList<>();
-        if (this.startDate == null || this.endDate == null || this.frequency == null) {
+        if (this.startDate == null || this.endDate == null) {
             return dates;
+        }
+        if (this.frequency == null) {
+            throw new IllegalStateException("Frequency is required.");
         }
         switch (this.frequency) {
             case DAILY:
@@ -133,11 +153,13 @@ public class RecurrencePattern {
                 }
                 break;
             default:
-                break;
+                throw new IllegalStateException("Unhandled RecurrenceFrequency: " + this.frequency
+                        + " (expected one of " + Arrays.toString(RecurrenceFrequency.values()) + ")");
         }
         return dates;
     }
 
+    //finds the next occurrence after a given date
     public LocalDate nextOccurrenceAfter(LocalDate fromExclusive) {
         List<LocalDate> all = generateOccurrences();
         LocalDate candidate = null;
@@ -151,6 +173,7 @@ public class RecurrencePattern {
         return candidate;
     }
 
+    //helper method to clamp the day of month to the last day of the month
     private static LocalDate clampDayOfMonth(LocalDate monthAnchor, int day) {
         int last = monthAnchor.lengthOfMonth();
         int use = Math.min(day, last);

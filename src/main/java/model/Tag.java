@@ -6,12 +6,16 @@ public class Tag {
 
     private String keyword;
 
+//---------------------------------CONSTRUCTORS---------------------------------
+
     public Tag(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
             throw new IllegalArgumentException("Tag keyword cannot be empty.");
         }
         this.keyword = keyword.trim();
     }
+
+//---------------------------------GETTERS AND SETTERS---------------------------------
 
     public String getKeyword() {
         return this.keyword;
@@ -23,6 +27,8 @@ public class Tag {
         }
         this.keyword = keyword.trim();
     }
+
+//---------------------------------UTILITY METHODS---------------------------------
 
     @Override
     public boolean equals(Object o) {

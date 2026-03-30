@@ -6,14 +6,14 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-/**
- * Opens JDBC connections to the SQLite file under {@code data/taskmanager.db} (created on first use).
- */
+//opens SQLite (default data/taskmanager.db) and ensures tables exist before each connection is returned
 public final class DatabaseConnection {
 
     public static final String DEFAULT_RELATIVE_PATH = "data/taskmanager.db";
 
     private final String jdbcUrl;
+
+//---------------------------------CONSTRUCTORS---------------------------------
 
     public DatabaseConnection() {
         this(DEFAULT_RELATIVE_PATH);
@@ -28,6 +28,8 @@ public final class DatabaseConnection {
         this.jdbcUrl = "jdbc:sqlite:" + f.getAbsolutePath();
     }
 
+//---------------------------------CONNECTION---------------------------------
+
     public Connection getConnection() throws SQLException {
         Connection c = DriverManager.getConnection(this.jdbcUrl);
         try (Statement st = c.createStatement()) {
@@ -36,6 +38,8 @@ public final class DatabaseConnection {
         ensureSchema(c);
         return c;
     }
+
+//---------------------------------SCHEMA---------------------------------
 
     static void ensureSchema(Connection c) throws SQLException {
         try (Statement st = c.createStatement()) {

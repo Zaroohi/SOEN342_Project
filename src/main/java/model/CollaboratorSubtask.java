@@ -4,6 +4,8 @@ public class CollaboratorSubtask extends SubTask {
 
     private Collaborator assignedTo;
 
+//---------------------------------CONSTRUCTORS---------------------------------
+
     public CollaboratorSubtask(String title, Collaborator assignedTo) {
         super(title);
         if (assignedTo == null) {
@@ -11,6 +13,8 @@ public class CollaboratorSubtask extends SubTask {
         }
         this.assignedTo = assignedTo;
     }
+
+//---------------------------------GETTERS AND SETTERS---------------------------------
 
     public Collaborator getCollaborator() {
         return this.assignedTo;
@@ -23,9 +27,11 @@ public class CollaboratorSubtask extends SubTask {
         this.assignedTo = assignedTo;
     }
 
+//---------------------------------UTILITY METHODS---------------------------------
+
     @Override
     public String toString() {
-        return "CollaboratorSubtask{title='" + getTitle() + "', status=" + getStatus()
-                + ", assignedTo=" + this.assignedTo + "}";
+        return "CollaboratorSubtask: title='" + getTitle() + "', status=" + getStatus()
+                + ", assignedTo=" + this.assignedTo;
     }
 }

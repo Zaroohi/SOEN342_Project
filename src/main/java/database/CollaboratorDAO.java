@@ -13,13 +13,18 @@ import model.CollaboratorCategory;
 import model.Project;
 import service.Projects;
 
+//SQL for the collaborator table (ties to project name; row ids used by collaborator subtasks)
 public final class CollaboratorDAO {
 
     private final Connection conn;
 
+//---------------------------------CONSTRUCTORS---------------------------------
+
     public CollaboratorDAO(Connection conn) {
         this.conn = conn;
     }
+
+//---------------------------------WRITE---------------------------------
 
     public void deleteAll() throws SQLException {
         try (Statement st = this.conn.createStatement()) {
@@ -27,9 +32,7 @@ public final class CollaboratorDAO {
         }
     }
 
-    /**
-     * Inserts collaborators for all projects; returns stable row ids for collaborator subtasks.
-     */
+    //inserts every collaborator on every project; returns JDBC row id per Collaborator instance for subtask FKs
     public IdentityHashMap<Collaborator, Long> insertAll(Iterable<Project> projects) throws SQLException {
         IdentityHashMap<Collaborator, Long> ids = new IdentityHashMap<>();
         for (Project p : projects) {
@@ -52,11 +55,9 @@ public final class CollaboratorDAO {
         return ids;
     }
 
-    /**
-     * Reads collaborators and attaches them to projects already loaded in {@code projects}.
-     *
-     * @return map from database row id to loaded {@link Collaborator}
-     */
+//---------------------------------READ---------------------------------
+
+    //attaches Collaborator objects to projects already in memory; returns id -> collaborator for loading subtasks
     public Map<Long, Collaborator> loadInto(Projects projects) throws SQLException {
         Map<Long, Collaborator> byId = new HashMap<>();
         try (Statement st = this.conn.createStatement();
