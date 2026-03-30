@@ -1,31 +1,64 @@
 package ui;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Scanner;
+import database.DatabaseConnection;
+import database.TaskDAO;
 import model.SearchCriteria;
 import model.Task;
 import model.TaskStatus;
-import Service.CsvExport;
-import Service.CsvImport;
-import Service.Projects;
-import Service.Tasks;
+import service.CsvExporter;
+import service.CsvImporter;
+import service.Projects;
+import service.Tasks;
 import util.DateUtil;
 
 public class Console {
 
     private final Scanner scanner;
+    private final DatabaseConnection databaseConnection;
+    private final Projects projects;
     private final Tasks tasks;
-    private final CsvImport csvImport;
-    private final CsvExport csvExport;
+    private final CsvImporter csvImporter;
+    private final CsvExporter csvExporter;
 
     public Console() {
+        this(new DatabaseConnection());
+    }
+
+    Console(DatabaseConnection databaseConnection) {
         this.scanner = new Scanner(System.in);
-        Projects projects = new Projects();
-        this.tasks = new Tasks(projects);
-        this.csvImport = new CsvImport(this.tasks, projects);
-        this.csvExport = new CsvExport(this.tasks);
+        this.databaseConnection = databaseConnection;
+        this.projects = new Projects();
+        this.tasks = new Tasks(this.projects);
+        try (Connection c = this.databaseConnection.getConnection()) {
+            new TaskDAO(c).loadAll(this.projects, this.tasks);
+        } catch (SQLException e) {
+            System.err.println("Could not load database: " + e.getMessage());
+        }
+        this.csvImporter = new CsvImporter(this.tasks, this.projects);
+        this.csvExporter = new CsvExporter(this.tasks);
+        Runtime.getRuntime().addShutdownHook(new Thread(this::persistQuietly));
+    }
+
+    private void persistQuietly() {
+        try (Connection c = this.databaseConnection.getConnection()) {
+            new TaskDAO(c).saveAll(this.projects, this.tasks);
+        } catch (Exception ignored) {
+            // best effort
+        }
+    }
+
+    private void persist() throws IOException {
+        try (Connection c = this.databaseConnection.getConnection()) {
+            new TaskDAO(c).saveAll(this.projects, this.tasks);
+        } catch (SQLException e) {
+            throw new IOException(e.getMessage(), e);
+        }
     }
 
     public void display(String message) {
@@ -52,6 +85,11 @@ public class Console {
                     exportTasks();
                     break;
                 case "5":
+                    try {
+                        persist();
+                    } catch (IOException e) {
+                        display("Could not save database: " + e.getMessage());
+                    }
                     running = false;
                     display("Exiting.");
                     break;
@@ -77,7 +115,8 @@ public class Console {
         System.out.print("Enter CSV file path to import: ");
         String filePath = this.scanner.nextLine();
         try {
-            this.csvImport.importFromCsv(filePath);
+            this.csvImporter.importFromCsv(filePath);
+            persist();
             display("Tasks imported successfully.");
         } catch (IOException e) {
             display("Error importing file: " + e.getMessage());
@@ -154,7 +193,7 @@ public class Console {
         System.out.print("Enter CSV file path to export: ");
         String filePath = this.scanner.nextLine();
         try {
-            this.csvExport.exportToCsv(filePath);
+            this.csvExporter.exportToCsv(filePath);
             display("Tasks exported successfully.");
         } catch (IOException e) {
             display("Error exporting file: " + e.getMessage());

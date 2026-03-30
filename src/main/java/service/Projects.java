@@ -1,4 +1,4 @@
-package Service;
+package service;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,5 +65,12 @@ public class Projects {
 
     public List<Project> getAllProjects() {
         return Collections.unmodifiableList(this.projects);
+    }
+
+    public void replaceState(List<Project> loaded) {
+        this.projects.clear();
+        if (loaded != null) {
+            this.projects.addAll(loaded);
+        }
     }
 }

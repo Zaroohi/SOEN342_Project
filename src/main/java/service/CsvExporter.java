@@ -1,4 +1,4 @@
-package Service;
+package service;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -9,14 +9,14 @@ import model.Project;
 import model.SubTask;
 import model.Task;
 
-public class CsvExport {
+public class CsvExporter {
 
     public static final String HEADER =
             "TaskName,Description,Subtask,Status,Priority,DueDate,ProjectName,ProjectDescription,Collaborator,CollaboratorCategory";
 
     private final Tasks tasks;
 
-    public CsvExport(Tasks tasks) {
+    public CsvExporter(Tasks tasks) {
         this.tasks = tasks;
     }
 

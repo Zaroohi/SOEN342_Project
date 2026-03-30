@@ -1,4 +1,4 @@
-package Service;
+package service;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -288,5 +288,13 @@ public class Tasks {
                 ((CollaboratorSubtask) s).getCollaborator().releaseAssignment((CollaboratorSubtask) s);
             }
         }
+    }
+
+    public void replaceState(List<Task> loaded, int nextIdValue) {
+        this.tasks.clear();
+        if (loaded != null) {
+            this.tasks.addAll(loaded);
+        }
+        this.nextId = nextIdValue;
     }
 }

@@ -26,19 +26,8 @@ public class Project {
         return this.name;
     }
 
-    public void setName(String name) {
-        if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Project name cannot be empty.");
-        }
-        this.name = name.trim();
-    }
-
     public String getDescription() {
         return this.description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description == null ? "" : description;
     }
 
     public List<Task> getTasks() {

@@ -3,10 +3,9 @@ package model;
 public enum ActionType {
     CREATED,
     UPDATED,
-    COMPLETED,
-    CANCELLED,
+    SUBTASK_ADDED,
     TAG_ADDED,
     TAG_REMOVED,
-    SUBTASK_ADDED,
-    OTHER
+    COMPLETED,
+    CANCELLED
 }

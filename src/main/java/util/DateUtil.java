@@ -26,7 +26,6 @@ public class DateUtil {
         if (date == null) {
             return "";
         }
-
         return date.format(formatter);
     }
 }

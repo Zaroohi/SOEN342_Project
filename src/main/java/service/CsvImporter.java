@@ -1,4 +1,4 @@
-package Service;
+package service;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -11,12 +11,12 @@ import model.CollaboratorCategory;
 import model.Project;
 import model.Task;
 
-public class CsvImport {
+public class CsvImporter {
 
     private final Tasks tasks;
     private final Projects projects;
 
-    public CsvImport(Tasks tasks, Projects projects) {
+    public CsvImporter(Tasks tasks, Projects projects) {
         this.tasks = tasks;
         this.projects = projects;
     }

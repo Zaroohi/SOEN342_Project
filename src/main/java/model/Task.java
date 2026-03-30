@@ -22,6 +22,17 @@ public class Task {
     private final List<ActivityEntry> activityHistory;
 
     public Task(int id, String title, String description, String priorityLevel, LocalDate dueDate) {
+        this(id, title, description, priorityLevel, dueDate, TaskStatus.OPEN, LocalDateTime.now(), false);
+    }
+
+    /** Rebuilds a task from SQLite without logging a synthetic CREATED entry. */
+    public static Task restore(int id, String title, String description, String priorityLevel,
+            LocalDate dueDate, TaskStatus status, LocalDateTime creationDate) {
+        return new Task(id, title, description, priorityLevel, dueDate, status, creationDate, true);
+    }
+
+    private Task(int id, String title, String description, String priorityLevel, LocalDate dueDate,
+            TaskStatus status, LocalDateTime creationDate, boolean silentLoad) {
         if (title == null || title.trim().isEmpty()) {
             throw new IllegalArgumentException("Task title cannot be empty.");
         }
@@ -30,14 +41,35 @@ public class Task {
         this.description = description == null ? "" : description;
         this.priorityLevel = priorityLevel == null ? "" : priorityLevel;
         this.dueDate = dueDate;
-        this.status = TaskStatus.OPEN;
-        this.creationDate = LocalDateTime.now();
+        this.status = status != null ? status : TaskStatus.OPEN;
+        this.creationDate = creationDate != null ? creationDate : LocalDateTime.now();
         this.recurrencePattern = null;
         this.project = null;
         this.subtasks = new ArrayList<>();
         this.tags = new ArrayList<>();
         this.activityHistory = new ArrayList<>();
-        log(ActionType.CREATED, "Task created");
+        if (!silentLoad) {
+            log(ActionType.CREATED, "Task created");
+        }
+    }
+
+    /** Used when loading from SQLite; does not write to the activity log. */
+    public void attachLoadedSubtask(SubTask subtask) {
+        if (subtask != null && !this.subtasks.contains(subtask)) {
+            this.subtasks.add(subtask);
+            subtask.bindParentTask(this);
+        }
+    }
+
+    /** Used when loading from SQLite; does not write to the activity log. */
+    public void attachLoadedTagKeyword(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return;
+        }
+        Tag tag = new Tag(keyword.trim());
+        if (!this.tags.contains(tag)) {
+            this.tags.add(tag);
+        }
     }
 
     public int getId() {
