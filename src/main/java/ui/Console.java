@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Scanner;
@@ -25,6 +26,7 @@ import model.TaskStatus;
 import service.Collaborators;
 import service.CsvExporter;
 import service.CsvImporter;
+import service.IcsCalendarExporter;
 import service.Projects;
 import service.Tasks;
 import util.DateUtil;
@@ -39,6 +41,7 @@ public class Console {
     private final Tasks tasks;
     private final CsvImporter csvImporter;
     private final CsvExporter csvExporter;
+    private final IcsCalendarExporter icsCalendarExporter;
     private List<Task> lastSearchResults;
 
 //---------------------------------CONSTRUCTORS---------------------------------
@@ -60,6 +63,7 @@ public class Console {
         }
         this.csvImporter = new CsvImporter(this.tasks, this.projects, this.collaborators);
         this.csvExporter = new CsvExporter(this.tasks);
+        this.icsCalendarExporter = new IcsCalendarExporter();
         this.lastSearchResults = new ArrayList<>();
         Runtime.getRuntime().addShutdownHook(new Thread(this::persistQuietly));
     }
@@ -163,6 +167,15 @@ public class Console {
                 exportTasks();
                 return true;
             case "21":
+                exportSingleTaskToIcal();
+                return true;
+            case "22":
+                exportProjectTasksToIcal();
+                return true;
+            case "23":
+                exportFilteredTasksToIcal();
+                return true;
+            case "24":
                 try {
                     persist();
                 } catch (IOException e) {
@@ -209,9 +222,12 @@ public class Console {
         display("IMPORT / EXPORT");
         display(" 19) Import tasks from CSV");
         display(" 20) Export tasks to CSV");
+        display(" 21) Export one task to .ics file");
+        display(" 22) Export project tasks to .ics file");
+        display(" 23) Export filtered tasks to .ics file");
         display("");
         display("SYSTEM");
-        display(" 21) Exit");
+        display(" 24) Exit");
         display("=======================================================");
     }
 
@@ -631,6 +647,53 @@ public class Console {
             display("Error exporting file: " + e.getMessage());
         } catch (Exception e) {
             display("Export failed: " + e.getMessage());
+        }
+    }
+
+    private void exportSingleTaskToIcal() {
+        Task task = findTaskByPrompt();
+        if (task == null) {
+            return;
+        }
+        String rawPath = prompt("Output path (.ics added if missing, e.g. mytasks or out/mytasks.ics)");
+        try {
+            String path = IcsCalendarExporter.ensureIcsFilePath(rawPath);
+            int n = this.icsCalendarExporter.exportToIcs(path, Collections.singletonList(task));
+            display("Wrote " + n + " event(s) to " + path + " (tasks without a due date are skipped).");
+        } catch (IOException e) {
+            display("iCal export failed: " + e.getMessage());
+        }
+    }
+
+    private void exportProjectTasksToIcal() {
+        String projectName = prompt("Project name");
+        Project project = this.projects.findByName(projectName);
+        if (project == null) {
+            display("Project not found.");
+            return;
+        }
+        String rawPath = prompt("Output path (.ics added if missing, e.g. mytasks or out/mytasks.ics)");
+        try {
+            String path = IcsCalendarExporter.ensureIcsFilePath(rawPath);
+            int n = this.icsCalendarExporter.exportToIcs(path, new ArrayList<>(project.getTasks()));
+            display("Wrote " + n + " event(s) to " + path + " (tasks without a due date are skipped).");
+        } catch (IOException e) {
+            display("iCal export failed: " + e.getMessage());
+        }
+    }
+
+    private void exportFilteredTasksToIcal() {
+        if (this.lastSearchResults.isEmpty()) {
+            display("No filtered list available. Use Search tasks (8) first.");
+            return;
+        }
+        String rawPath = prompt("Output path (.ics added if missing, e.g. mytasks or out/mytasks.ics)");
+        try {
+            String path = IcsCalendarExporter.ensureIcsFilePath(rawPath);
+            int n = this.icsCalendarExporter.exportToIcs(path, this.lastSearchResults);
+            display("Wrote " + n + " event(s) to " + path + " (tasks without a due date are skipped).");
+        } catch (IOException e) {
+            display("iCal export failed: " + e.getMessage());
         }
     }
 
