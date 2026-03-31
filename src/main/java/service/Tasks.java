@@ -10,8 +10,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import database.DatabaseConnection;
-import database.TaskDAO;
+import database.AppDAO;
 import model.Collaborator;
+import model.CollaboratorCategory;
 import model.CollaboratorSubtask;
 import model.Project;
 import model.RecurrencePattern;
@@ -21,7 +22,7 @@ import model.SubTaskStatus;
 import model.Task;
 import model.TaskStatus;
 
-//in-memory tasks + rules; copies everything to SQLite after each change (see beginDefer/endDefer for multi-step only)
+//in-memory tasks + rules - copies everything to SQLite after each change
 public class Tasks {
 
     private final List<Task> tasks;
@@ -42,12 +43,12 @@ public class Tasks {
         this.nextId = 1;
     }
 
-//---------------------------------DATABASE (one method + optional defer)---------------------------------
+//---------------------------------DATABASE---------------------------------
 
     //writes memory to SQLite (projects, collaborators, tasks, subtasks, tags)
     private void writeToDatabase() {
         try (Connection c = this.databaseConnection.getConnection()) {
-            new TaskDAO(c).saveAll(this.projects, this);
+            new AppDAO(c).saveAll(this.projects, this);
         } catch (IOException | SQLException e) {
             throw new RuntimeException("Could not save to database: " + e.getMessage(), e);
         }
@@ -125,6 +126,19 @@ public class Tasks {
         saveAfterChange();
     }
 
+    public Project createProject(String name, String description) {
+        Project project = new Project(name, description);
+        this.projects.save(project);
+        saveAfterChange();
+        return project;
+    }
+
+    public Collaborator addCollaboratorToProject(Project project, String name, CollaboratorCategory category) {
+        Collaborator collaborator = this.collaborators.getOrCreate(project, name, category);
+        saveAfterChange();
+        return collaborator;
+    }
+
 //---------------------------------QUERIES (read-only, no DB write)---------------------------------
 
     public List<Task> getAllTasks() {
@@ -185,6 +199,31 @@ public class Tasks {
                 if (!taskDay.equalsIgnoreCase(criteria.getDayOfWeek().trim())) {
                     matches = false;
                 }
+            }
+        }
+        if (matches && criteria.getPriority() != null && !criteria.getPriority().trim().isEmpty()) {
+            String currentPriority = currentTask.getPriorityLevel() == null ? "" : currentTask.getPriorityLevel();
+            if (!currentPriority.equalsIgnoreCase(criteria.getPriority().trim())) {
+                matches = false;
+            }
+        }
+        if (matches && criteria.getProjectName() != null && !criteria.getProjectName().trim().isEmpty()) {
+            if (currentTask.getProject() == null
+                    || !currentTask.getProject().getName().equalsIgnoreCase(criteria.getProjectName().trim())) {
+                matches = false;
+            }
+        }
+        if (matches && criteria.getTagKeyword() != null && !criteria.getTagKeyword().trim().isEmpty()) {
+            String wanted = criteria.getTagKeyword().trim();
+            boolean found = false;
+            for (model.Tag tag : currentTask.getTags()) {
+                if (tag.getKeyword().equalsIgnoreCase(wanted)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                matches = false;
             }
         }
         return matches;

@@ -3,6 +3,7 @@ package service;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
 import model.Collaborator;
 import model.CollaboratorSubtask;
 import model.Project;
@@ -26,9 +27,13 @@ public class CsvExporter {
 //---------------------------------EXPORT---------------------------------
 
     public void exportToCsv(String filePath) throws IOException {
+        exportToCsv(filePath, this.tasks.getAllTasks());
+    }
+
+    public void exportToCsv(String filePath, List<Task> toExport) throws IOException {
         PrintWriter writer = new PrintWriter(new FileWriter(filePath));
         writer.println(HEADER);
-        for (Task t : this.tasks.getAllTasks()) {
+        for (Task t : toExport) {
             Project p = t.getProject();
             String projectName = p != null ? escapeCsv(p.getName()) : "";
             String projectDesc = p != null ? escapeCsv(p.getDescription()) : "";

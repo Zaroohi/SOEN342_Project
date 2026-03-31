@@ -15,6 +15,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import model.Collaborator;
+import model.CollaboratorCategory;
 import model.CollaboratorSubtask;
 import model.GeneralSubtask;
 import model.Project;
@@ -26,29 +27,15 @@ import model.TaskStatus;
 import service.Projects;
 import service.Tasks;
 
-//loads/saves tasks, subtasks, tags and delegates project + collaborator tables to ProjectDAO and CollaboratorDAO
-public final class TaskDAO {
+//single persistence class that loads/saves projects, collaborators, tasks, subtasks, and tags
+public final class AppDAO {
 
     private final Connection conn;
-    private final ProjectDAO projectDao;
-    private final CollaboratorDAO collaboratorDao;
 
 //---------------------------------CONSTRUCTORS---------------------------------
 
-    public TaskDAO(Connection conn) {
+    public AppDAO(Connection conn) {
         this.conn = conn;
-        this.projectDao = new ProjectDAO(conn);
-        this.collaboratorDao = new CollaboratorDAO(conn);
-    }
-
-//---------------------------------DELETE TASK TABLES ONLY---------------------------------
-
-    public void deleteTaskData() throws SQLException {
-        try (Statement st = this.conn.createStatement()) {
-            st.executeUpdate("DELETE FROM task_tag");
-            st.executeUpdate("DELETE FROM subtask");
-            st.executeUpdate("DELETE FROM task");
-        }
     }
 
 //---------------------------------LOAD ALL INTO MEMORY---------------------------------
@@ -58,8 +45,8 @@ public final class TaskDAO {
             projects.replaceState(new ArrayList<>());
             tasks.replaceState(new ArrayList<>(), 1);
 
-            this.projectDao.loadInto(projects);
-            Map<Long, Collaborator> collabById = this.collaboratorDao.loadInto(projects);
+            loadProjectsInto(projects);
+            Map<Long, Collaborator> collabById = loadCollaboratorsInto(projects);
 
             Map<Integer, Task> taskById = new HashMap<>();
             int maxId = 0;
@@ -146,12 +133,11 @@ public final class TaskDAO {
                 st.executeUpdate("DELETE FROM task_tag");
                 st.executeUpdate("DELETE FROM subtask");
                 st.executeUpdate("DELETE FROM task");
+                st.executeUpdate("DELETE FROM collaborator");
+                st.executeUpdate("DELETE FROM project");
             }
-            this.collaboratorDao.deleteAll();
-            this.projectDao.deleteAll();
-
-            this.projectDao.insertAll(projects.getAllProjects());
-            IdentityHashMap<Collaborator, Long> collabIds = this.collaboratorDao.insertAll(projects.getAllProjects());
+            insertAllProjects(projects.getAllProjects());
+            IdentityHashMap<Collaborator, Long> collabIds = insertAllCollaborators(projects.getAllProjects());
 
             for (Task t : tasks.getAllTasks()) {
                 try (PreparedStatement ps = this.conn.prepareStatement(
@@ -218,5 +204,73 @@ public final class TaskDAO {
                 // ignore
             }
         }
+    }
+
+//---------------------------------PROJECT SQL---------------------------------
+
+    private void loadProjectsInto(Projects projects) throws SQLException {
+        List<Project> loaded = new ArrayList<>();
+        try (Statement st = this.conn.createStatement();
+                ResultSet rs = st.executeQuery("SELECT name, description FROM project ORDER BY name")) {
+            while (rs.next()) {
+                loaded.add(new Project(rs.getString("name"), rs.getString("description")));
+            }
+        }
+        projects.replaceState(loaded);
+    }
+
+    private void insertAllProjects(Iterable<Project> projects) throws SQLException {
+        for (Project p : projects) {
+            try (PreparedStatement ps = this.conn.prepareStatement(
+                    "INSERT INTO project (name, description) VALUES (?,?)")) {
+                ps.setString(1, p.getName());
+                ps.setString(2, p.getDescription() == null ? "" : p.getDescription());
+                ps.executeUpdate();
+            }
+        }
+    }
+
+//---------------------------------COLLABORATOR SQL---------------------------------
+
+    private Map<Long, Collaborator> loadCollaboratorsInto(Projects projects) throws SQLException {
+        Map<Long, Collaborator> byId = new HashMap<>();
+        try (Statement st = this.conn.createStatement();
+                ResultSet rs = st.executeQuery(
+                        "SELECT id, project_name, name, category FROM collaborator ORDER BY id")) {
+            while (rs.next()) {
+                long id = rs.getLong("id");
+                Project p = projects.findByName(rs.getString("project_name"));
+                if (p == null) {
+                    continue;
+                }
+                CollaboratorCategory cat = CollaboratorCategory.valueOf(rs.getString("category"));
+                Collaborator col = new Collaborator(p, rs.getString("name"), cat);
+                p.addCollaborator(col);
+                byId.put(id, col);
+            }
+        }
+        return byId;
+    }
+
+    private IdentityHashMap<Collaborator, Long> insertAllCollaborators(Iterable<Project> projects) throws SQLException {
+        IdentityHashMap<Collaborator, Long> ids = new IdentityHashMap<>();
+        for (Project p : projects) {
+            for (Collaborator col : p.getCollaborators()) {
+                try (PreparedStatement ps = this.conn.prepareStatement(
+                        "INSERT INTO collaborator (project_name, name, category) VALUES (?,?,?)",
+                        Statement.RETURN_GENERATED_KEYS)) {
+                    ps.setString(1, p.getName());
+                    ps.setString(2, col.getName());
+                    ps.setString(3, col.getCategory().name());
+                    ps.executeUpdate();
+                    try (ResultSet keys = ps.getGeneratedKeys()) {
+                        if (keys.next()) {
+                            ids.put(col, keys.getLong(1));
+                        }
+                    }
+                }
+            }
+        }
+        return ids;
     }
 }

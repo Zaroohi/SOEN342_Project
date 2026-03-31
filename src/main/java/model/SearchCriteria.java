@@ -10,6 +10,9 @@ public class SearchCriteria {
     private LocalDate startDate;
     private LocalDate endDate;
     private String dayOfWeek;
+    private String priority;
+    private String projectName;
+    private String tagKeyword;
 
 //---------------------------------CONSTRUCTORS---------------------------------
 
@@ -19,6 +22,9 @@ public class SearchCriteria {
         this.startDate = null;
         this.endDate = null;
         this.dayOfWeek = null;
+        this.priority = null;
+        this.projectName = null;
+        this.tagKeyword = null;
     }
 
 //---------------------------------GETTERS AND SETTERS---------------------------------
@@ -65,12 +71,39 @@ public class SearchCriteria {
         this.dayOfWeek = dayOfWeek;
     }
 
+    public String getPriority() {
+        return this.priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
+    public String getProjectName() {
+        return this.projectName;
+    }
+
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
+    }
+
+    public String getTagKeyword() {
+        return this.tagKeyword;
+    }
+
+    public void setTagKeyword(String tagKeyword) {
+        this.tagKeyword = tagKeyword;
+    }
+
    
     public boolean isEmpty() {
         return this.titleKeyword == null &&
                this.status == null &&
                this.startDate == null &&
                this.endDate == null &&
-               this.dayOfWeek == null;
+               this.dayOfWeek == null &&
+               this.priority == null &&
+               this.projectName == null &&
+               this.tagKeyword == null;
     }
 }
