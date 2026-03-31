@@ -159,20 +159,6 @@ public class RecurrencePattern {
         return dates;
     }
 
-    //finds the next occurrence after a given date
-    public LocalDate nextOccurrenceAfter(LocalDate fromExclusive) {
-        List<LocalDate> all = generateOccurrences();
-        LocalDate candidate = null;
-        for (LocalDate d : all) {
-            if (fromExclusive == null || d.isAfter(fromExclusive)) {
-                if (candidate == null || d.isBefore(candidate)) {
-                    candidate = d;
-                }
-            }
-        }
-        return candidate;
-    }
-
     //helper method to clamp the day of month to the last day of the month
     private static LocalDate clampDayOfMonth(LocalDate monthAnchor, int day) {
         int last = monthAnchor.lengthOfMonth();

@@ -30,20 +30,6 @@ public class Projects {
         return null;
     }
 
-    public List<Project> searchByNameKeyword(String keyword) {
-        if (keyword == null || keyword.trim().isEmpty()) {
-            return getAllProjects();
-        }
-        String q = keyword.trim().toLowerCase();
-        List<Project> out = new ArrayList<>();
-        for (Project p : this.projects) {
-            if (p.getName().toLowerCase().contains(q)) {
-                out.add(p);
-            }
-        }
-        return out;
-    }
-
 //---------------------------------MUTATIONS---------------------------------
 
     public void save(Project project) {

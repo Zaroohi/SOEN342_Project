@@ -273,21 +273,6 @@ public class Task {
         return sb.toString();
     }
 
-    public CollaboratorSubtask findCollaboratorSubtaskFor(Collaborator collaborator) {
-        if (collaborator == null) {
-            return null;
-        }
-        for (SubTask s : this.subtasks) {
-            if (s instanceof CollaboratorSubtask) {
-                CollaboratorSubtask cs = (CollaboratorSubtask) s;
-                if (collaborator.equals(cs.getCollaborator())) {
-                    return cs;
-                }
-            }
-        }
-        return null;
-    }
-
     @Override
     public String toString() {
         return "Task:id=" + this.id + ", title='" + this.title + "', description='" + this.description

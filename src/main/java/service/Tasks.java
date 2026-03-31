@@ -112,20 +112,6 @@ public class Tasks {
         saveAfterChange();
     }
 
-    public void deleteId(int id) {
-        Task task = findById(id);
-        if (task == null) {
-            return;
-        }
-        releaseCollaboratorAssignments(task);
-        Project p = task.getProject();
-        if (p != null) {
-            p.removeTask(task);
-        }
-        this.tasks.remove(task);
-        saveAfterChange();
-    }
-
     public Project createProject(String name, String description) {
         Project project = new Project(name, description);
         this.projects.save(project);

@@ -21,11 +21,4 @@ public class DateUtil {
             throw new IllegalArgumentException("Date format is invalid. Please use yyyy-MM-dd.");
         }
     }
-    //formatting LocalDate to string
-    public static String formatDate(LocalDate date) {
-        if (date == null) {
-            return "";
-        }
-        return date.format(formatter);
-    }
 }
