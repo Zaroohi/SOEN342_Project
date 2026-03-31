@@ -1,0 +1,21 @@
+1 - A task cannot have more than 20 subtasks
+context Task
+inv Max20Subtasks:
+    self.subtasks->size() <= 20
+
+2 - Open tasks without due date should not exceed 50 (system-wide)
+context Tasks
+inv Max50OpenWithoutDueDate:
+    self.tasks->select(t | t.status = TaskStatus::OPEN and t.dueDate.oclIsUndefined())->size() <= 50
+
+3 - Limit for open tasks per collaborator category is a positive integer
+context CollaboratorCategory
+inv PositiveOpenTaskLimit:
+    self.maxOpenTasks > 0
+
+4 - No collaborator overloaded
+context Collaborator
+inv NotOverloaded:
+    self.openAssignments
+        ->select(s | s.status = SubTaskStatus::OPEN)
+        ->size() <= self.category.maxOpenTasks

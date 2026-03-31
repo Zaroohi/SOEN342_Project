@@ -25,6 +25,8 @@ import model.TaskStatus;
 //in-memory tasks + rules - copies everything to SQLite after each change
 public class Tasks {
 
+    public static final int MAX_OPEN_TASKS_WITHOUT_DUE_DATE = 50;
+
     private final List<Task> tasks;
     private final Projects projects;
     private final Collaborators collaborators;
@@ -47,6 +49,7 @@ public class Tasks {
 
     //writes memory to SQLite (projects, collaborators, tasks, subtasks, tags)
     private void writeToDatabase() {
+        validateGlobalConstraints();
         try (Connection c = this.databaseConnection.getConnection()) {
             new AppDAO(c).saveAll(this.projects, this);
         } catch (IOException | SQLException e) {
@@ -256,6 +259,7 @@ public class Tasks {
             throw new IllegalArgumentException("Task title can't be empty.");
         }
         assertTitleDueDateUnique(title, dueDate);
+        assertOpenWithoutDueDateLimitBeforeCreate(dueDate);
 
         this.collaborators.validateForOpenAssignment(collaborator, project);
 
@@ -300,6 +304,45 @@ public class Tasks {
             if (current.getTitle().equalsIgnoreCase(title.trim())
                     && Objects.equals(current.getDueDate(), dueDate)) {
                 throw new IllegalArgumentException("A task with the same title and due date already exists.");
+            }
+        }
+    }
+
+    private void assertOpenWithoutDueDateLimitBeforeCreate(LocalDate dueDate) {
+        if (dueDate != null) {
+            return;
+        }
+        int openWithoutDueDate = 0;
+        for (Task t : this.tasks) {
+            if (t.getStatus() == TaskStatus.OPEN && t.getDueDate() == null) {
+                openWithoutDueDate++;
+            }
+        }
+        if (openWithoutDueDate >= MAX_OPEN_TASKS_WITHOUT_DUE_DATE) {
+            throw new IllegalStateException(
+                    "Open tasks without due date cannot exceed " + MAX_OPEN_TASKS_WITHOUT_DUE_DATE + ".");
+        }
+    }
+
+    private void validateGlobalConstraints() {
+        int openWithoutDueDate = 0;
+        for (Task t : this.tasks) {
+            if (t.getStatus() == TaskStatus.OPEN && t.getDueDate() == null) {
+                openWithoutDueDate++;
+            }
+        }
+        if (openWithoutDueDate > MAX_OPEN_TASKS_WITHOUT_DUE_DATE) {
+            throw new IllegalStateException(
+                    "Open tasks without due date cannot exceed " + MAX_OPEN_TASKS_WITHOUT_DUE_DATE + ".");
+        }
+
+        for (Project p : this.projects.getAllProjects()) {
+            for (Collaborator c : p.getCollaborators()) {
+                if (c.getActiveOpenTasks() > c.getOpenTasksLimit()) {
+                    throw new IllegalStateException(
+                            "Collaborator '" + c.getName() + "' is overloaded: "
+                                    + c.getActiveOpenTasks() + "/" + c.getOpenTasksLimit() + ".");
+                }
             }
         }
     }

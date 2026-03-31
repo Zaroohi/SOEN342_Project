@@ -8,6 +8,8 @@ import java.util.List;
 
 public class Task {
 
+    public static final int MAX_SUBTASKS = 20;
+
     private final int id;
     private String title;
     private String description;
@@ -71,6 +73,7 @@ public class Task {
     //from the database, adds a subtask to the task and ignores the activity log
     public void attachLoadedSubtask(SubTask subtask) {
         if (subtask != null && !this.subtasks.contains(subtask)) {
+            ensureSubtaskCapacity();
             this.subtasks.add(subtask);
             subtask.bindParentTask(this);
         }
@@ -177,9 +180,16 @@ public class Task {
     //helper method to add a subtask to the task and log the action
     private void addSubtaskInternal(SubTask subtask) {
         if (subtask != null && !this.subtasks.contains(subtask)) {
+            ensureSubtaskCapacity();
             this.subtasks.add(subtask);
             subtask.bindParentTask(this);
             log(ActionType.SUBTASK_ADDED, "Subtask added: " + subtask.getTitle());
+        }
+    }
+
+    private void ensureSubtaskCapacity() {
+        if (this.subtasks.size() >= MAX_SUBTASKS) {
+            throw new IllegalStateException("A task cannot have more than " + MAX_SUBTASKS + " subtasks.");
         }
     }
     //adds a subtask to the task and logs the action

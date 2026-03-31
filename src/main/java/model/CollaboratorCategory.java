@@ -6,6 +6,9 @@ public enum CollaboratorCategory {
 	private final int maxOpenTasks; 
 	
 	 CollaboratorCategory(int maxOpenTasks) {
+            if (maxOpenTasks <= 0) {
+                throw new IllegalArgumentException("Collaborator open-task limit must be a positive integer.");
+            }
 	        this.maxOpenTasks = maxOpenTasks;
 	    }
 
