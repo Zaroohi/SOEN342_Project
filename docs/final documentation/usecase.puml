@@ -1,0 +1,77 @@
+@startuml
+left to right direction
+
+actor User
+
+rectangle "Personal Task Management System (iteration3)" {
+
+  'Projects
+  usecase "Manage Projects" as UC1
+  usecase "Create Project" as UC2
+  usecase "View Projects" as UC3
+  usecase "Save Projects" as UC4
+  UC1 --> UC2
+  UC1 --> UC3
+  UC1 --> UC4
+  'Tasks
+  usecase "Create Task" as UC5
+  usecase "Update Task" as UC6
+  usecase "Complete Task" as UC7
+  usecase "Cancel Task" as UC8
+  usecase "View Tasks" as UC9
+  usecase "Search Tasks" as UC10
+
+  UC10 .> UC9 : <<include>>
+
+  'Subtasks
+  usecase "Manage Subtasks" as UC11
+  usecase "Create Subtask" as UC12
+
+  UC11 --> UC12
+
+  'Collaborators
+  usecase "Manage Collaborators" as UC13
+  usecase "Assign Collaborator" as UC14
+  usecase "Check Collaborator Limit" as UC15
+
+  UC14 .> UC15 : <<include>>
+  'Recurrence 
+  usecase "Manage Recurrence" as UC16
+
+  UC5 .> UC16 : <<include>>
+
+  'tags
+  usecase "Manage Tags" as UC17
+
+  'activity
+  usecase "Record Task Activity" as UC18
+  usecase "View Task Activity History" as UC19
+
+  UC5 .> UC18 : <<include>>
+  UC6 .> UC18 : <<include>>
+  UC7 .> UC18 : <<include>>
+  UC8 .> UC18 : <<include>>
+
+  'import/export
+  usecase "Export Tasks to CSV" as UC20
+  usecase "Import Tasks from CSV" as UC21
+  usecase "Export Tasks to iCalendar" as UC22
+
+}
+
+'user links
+User --> UC1
+User --> UC5
+User --> UC6
+User --> UC7
+User --> UC8
+User --> UC10
+User --> UC11
+User --> UC13
+User --> UC17
+User --> UC19
+User --> UC20
+User --> UC21
+User --> UC22
+
+@enduml
