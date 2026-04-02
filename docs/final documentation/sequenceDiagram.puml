@@ -1,0 +1,25 @@
+@startuml
+title Sequence Diagram - Export Tasks to CSV (Implementation)
+hide footbox
+actor User
+participant UI
+participant CsvExporter
+participant Tasks
+
+
+User -> UI : exportCSV(filePath)
+UI -> CsvExporter : exportToCsv(filePath)
+
+CsvExporter -> Tasks : getAllTasks()
+Tasks --> CsvExporter : taskList
+
+loop for each Task
+    CsvExporter -> CsvExporter : extract fields (title, description, subtasks, etc.)
+    CsvExporter -> CsvExporter : format CSV line
+    CsvExporter -> CsvExporter : write line to file
+end
+
+CsvExporter --> UI : exportSuccess
+UI --> User : confirmation
+
+@enduml
