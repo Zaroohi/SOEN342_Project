@@ -1,0 +1,28 @@
+# Maven / Java build output
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+
+# Runtime database files
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+!data/.gitkeep
+
+# IntelliJ
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Maven wrapper transient cache files
+.mvn/wrapper/maven-wrapper.jar.lastUpdated
