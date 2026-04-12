@@ -1,0 +1,90 @@
+@startuml
+
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam stereotypeCBackgroundColor white
+skinparam stereotypeCBorderColor white 
+skinparam stereotypeFontColor white
+hide circle
+hide methods
+
+entity Project {
+  * project_id : int
+  --
+  name : String
+  description : String
+}
+entity Task {
+  * task_id : int
+  --
+  title : String
+  description : String
+  creation_date : LocalDateTime
+  priority_level : String
+  status : TaskStatus
+  due_date : LocalDate
+  project_id : int <<FK, nullable>>
+  recurrence_pattern_id : int <<FK, nullable>>
+}
+
+entity SubTask {
+  * subtask_id : int
+  --
+  title : String
+  status : SubTaskStatus
+  subtask_type : String
+  task_id : int <<FK>>
+  collaborator_id : int <<FK, nullable>>
+}
+
+entity Collaborator {
+  * collaborator_id : int
+  --
+  name : String
+  category : CollaboratorCategory
+  project_id : int <<FK>>
+}
+
+entity Tag {
+  * tag_id : int
+  --
+  keyword : String
+}
+
+entity TaskTag {
+  * task_id : int <<FK>>
+  * tag_id : int <<FK>>
+}
+entity RecurrencePattern {
+  * recurrence_pattern_id : int
+  --
+  frequency : RecurrenceFrequency
+  interval : int
+  start_date : LocalDate
+  end_date : LocalDate
+  week_days : String
+  day_of_month : int
+}
+entity ActivityEntry {
+  * activity_id : int
+  --
+  type : ActionType
+  description : String
+  time : LocalDateTime
+  task_id : int <<FK>>
+}
+
+
+
+Project ||--o{ Task
+Project ||--o{ Collaborator
+Task ||--o{ SubTask
+Task ||--o{ ActivityEntry
+Task ||--o{ TaskTag
+Tag ||--o{ TaskTag
+RecurrencePattern ||--o{ Task
+Collaborator ||--o{ SubTask
+
+@enduml
