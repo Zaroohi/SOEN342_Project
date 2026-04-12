@@ -1,0 +1,80 @@
+@startuml
+left to right direction
+
+skinparam backgroundColor white
+skinparam classBackgroundColor white
+skinparam classBorderColor black
+skinparam classFontColor black
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide circle
+
+class "Recurrence Pattern" {
+  frequency
+  interval
+  startDate
+  endDate
+}
+
+class Task {
+  title
+  description
+  creationDate
+  priorityLevel
+  status
+  dueDate
+}
+
+class Project {
+  name
+  description
+}
+
+class Collaborator {
+  name
+  category
+}
+
+class "Activity Entry" {
+  timeStamp
+  actionDescription
+  actionType
+}
+class Tag {
+  keyWord
+}
+
+abstract class "Sub Task" {
+  title
+  status
+}
+
+class GeneralSubtask
+class CollaboratorSubtask {
+  assignedCollaborator
+}
+
+Project "1" --- Task
+Task "0..*" --- Project
+
+Project "1" --- Collaborator
+Collaborator "0..*" -- Project
+
+Task "1" --- ActivityEntry
+ActivityEntry "0..*" -- Task
+
+Task "1" --- Tag
+Tag "0..*" --- Task
+
+Task "1" *--- "0..*" "Sub Task"
+
+CollaboratorSubtask ---> Collaborator
+
+GeneralSubtask ---|> "Sub Task"
+CollaboratorSubtask ---|> "Sub Task"
+
+"Recurrence Pattern" "1" --- Task
+Task "0..*" -- "Recurrence Pattern"
+
+@enduml
