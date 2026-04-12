@@ -175,7 +175,10 @@ public class Console {
             case "23":
                 exportFilteredTasksToIcal();
                 return true;
-            case "24":
+            case "24": 
+            	listOverloadedCollaborators();
+            	return true;
+            case "25":
                 try {
                     persist();
                 } catch (IOException e) {
@@ -225,9 +228,10 @@ public class Console {
         display(" 21) Export one task to .ics file");
         display(" 22) Export project tasks to .ics file");
         display(" 23) Export filtered tasks to .ics file");
+        display(" 24) List overloaded collaborators");
         display("");
         display("SYSTEM");
-        display(" 24) Exit");
+        display(" 25) Exit");
         display("=======================================================");
     }
 
@@ -756,6 +760,43 @@ public class Console {
             }
         }
         return out;
+    }
+    private void listOverloadedCollaborators() {
+        System.out.println("DEBUG: entered option 24");
+
+        System.out.println("\nOverloaded collaborators:");
+
+        boolean found = false;
+        List<Collaborator> printed = new ArrayList<>();
+
+        for (Project project : projects.getAllProjects()) {
+            System.out.println("DEBUG project: " + project.getName());
+
+            for (Collaborator collaborator : project.getCollaborators()) {
+                System.out.println("DEBUG collaborator: " + collaborator.getName()
+                    + " active=" + collaborator.getActiveOpenTasks()
+                    + " limit=" + collaborator.getOpenTasksLimit());
+
+                if (collaborator.getActiveOpenTasks() >= collaborator.getOpenTasksLimit()
+                        && !printed.contains(collaborator)) {
+
+                    found = true;
+                    printed.add(collaborator);
+
+                    System.out.println(
+                        "- " + collaborator.getName()
+                        + " | Project: " + project.getName()
+                        + " | Category: " + collaborator.getCategory()
+                        + " | Open tasks: " + collaborator.getActiveOpenTasks()
+                        + "/" + collaborator.getOpenTasksLimit()
+                    );
+                }
+            }
+        }
+
+        if (!found) {
+            System.out.println("No overloaded collaborators.");
+        }
     }
 
     private RecurrencePattern readRecurrencePattern() {
