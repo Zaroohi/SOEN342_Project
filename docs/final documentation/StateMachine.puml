@@ -1,0 +1,27 @@
+@startuml
+title State Machine (Task Behavior)
+
+[*] --> OPEN : createTask()
+
+note right of OPEN
+Task is active
+Can be updated, assigned, searched
+end note
+
+note right of COMPLETED
+Task finished
+Subtasks auto-updated
+end note
+
+note right of CANCELLED
+Task cancelled
+Subtasks cancelled
+end note
+
+OPEN --> COMPLETED : completeTask() / record ActivityEntry
+OPEN --> CANCELLED : cancelTask() / record ActivityEntry
+
+COMPLETED --> OPEN : reopenTask() / record ActivityEntry
+CANCELLED --> OPEN : reopenTask() / record ActivityEntry
+
+@enduml
