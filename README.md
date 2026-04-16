@@ -9,7 +9,8 @@ Team members:
 - Zaruhi Grigoryan - 40299515 - Zaroohi
 - Jakson Rabinovitch - 40285726 - Jaksonrab
 - Hala Abdulsamad - 40296853 - hala842
-
+## Link to our demo video 
+[https://www.youtube.com/watch?v=bT7qi8riV2I](url)
 ## Running the application
 
 ### Prerequisites
