@@ -10,7 +10,7 @@ Team members:
 - Jakson Rabinovitch - 40285726 - Jaksonrab
 - Hala Abdulsamad - 40296853 - hala842
 ## Link to our demo video 
-[https://www.youtube.com/watch?v=bT7qi8riV2I](url)
+https://www.youtube.com/watch?v=bT7qi8riV2I
 ## Running the application
 
 ### Prerequisites
